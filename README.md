@@ -119,11 +119,19 @@ const { withUser, requireUser, requireAdmin } = authMiddleware({
 #### `kit/auth/expo`: the mobile app
 
 ```ts
+import { randomUUID } from 'expo-crypto'
 import * as SecureStore from 'expo-secure-store'
 import * as Passkeys from 'react-native-passkeys'
 import { createMobileAuth } from '@jgb-solutions/kit/auth/expo'
 
-export const auth = createMobileAuth({ origin: 'https://app.example.com', storage: SecureStore, tokenKey: 'example.session', fetchMe })
+// randomId: Hermes has no global crypto; sign-up without an email needs one for its placeholder address.
+export const auth = createMobileAuth({
+  origin: 'https://app.example.com',
+  storage: SecureStore,
+  tokenKey: 'example.session',
+  fetchMe,
+  randomId: randomUUID,
+})
 
 const session = useSyncExternalStore(auth.subscribe, auth.getSession)
 await auth.signIn('maria', password) // or an email address

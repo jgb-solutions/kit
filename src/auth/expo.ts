@@ -17,7 +17,7 @@
  *
  * Failures come back as codes (Better Auth's, such as INVALID_USERNAME_OR_PASSWORD; the kit's
  * ACCOUNT_NOT_LINKED and GOOGLE_ALREADY_LINKED from kit/auth/rules; or NETWORK, TOO_MANY_REQUESTS,
- * CANCELLED, NO_TOKEN): the app words them.
+ * CANCELLED, NO_TOKEN, NO_RANDOM_ID): the app words them.
  */
 import { authErrorCode, isPlaceholderEmail, placeholderEmail } from './rules'
 
@@ -48,6 +48,12 @@ export type MobileAuthConfig<U> = {
   fetchMe: () => Promise<U>
   /** Runs after each sign-in (`firstTime`) and each launch with a saved session: syncing what the phone holds. */
   onSignedIn?: (firstTime: boolean) => Promise<void>
+  /**
+   * A random UUID, for the placeholder address of an account made without an email. Defaults to the
+   * runtime's `crypto.randomUUID`, which React Native's Hermes doesn't have: pass expo-crypto's
+   * `randomUUID` there. Without either, signUp without an email answers `NO_RANDOM_ID`.
+   */
+  randomId?: () => string
   /** For tests. */
   fetch?: typeof fetch
 }
@@ -154,12 +160,11 @@ export function createMobileAuth<U>(config: MobileAuthConfig<U>) {
     /** A new account. Without an email address, the placeholder the website uses (never shown or mailed). */
     signUp(input: { username: string; password: string; email?: string; name?: string }): Promise<AuthResult> {
       const username = input.username.trim().toLowerCase()
-      return signInWith('/sign-up/email', {
-        name: input.name?.trim() || username,
-        username,
-        email: input.email?.trim() || placeholderEmail(),
-        password: input.password,
-      })
+      const randomId =
+        config.randomId ?? (typeof globalThis.crypto?.randomUUID === 'function' ? () => globalThis.crypto.randomUUID() : null)
+      const email = input.email?.trim() || (randomId ? placeholderEmail(randomId) : null)
+      if (!email) return Promise.resolve({ ok: false, code: 'NO_RANDOM_ID' })
+      return signInWith('/sign-up/email', { name: input.name?.trim() || username, username, email, password: input.password })
     },
 
     /**

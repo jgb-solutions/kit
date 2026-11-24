@@ -1,6 +1,6 @@
 {
   "name": "@jgb-solutions/kit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Generic plumbing for web apps on Bun and Cloudflare Workers: small, typed, tree-shakable modules (Cloudflare Access, Better Auth).",
   "license": "MIT",
   "author": "JGB Solutions",

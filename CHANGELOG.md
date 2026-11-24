@@ -2,6 +2,12 @@
 
 All notable changes to `@jgb-solutions/kit`. Versions follow semver.
 
+## 0.2.1
+
+- `standardAuthOptions({ passkeyOrigin: 'request' })`: passkeys checked against the request's own origin, which `trustedBaseUrl` limits to the site and local hosts, so the site, previews and any local port each work (the jgb-starter template's setup). The default, `'listed'`, keeps the fixed list (the site, `localOrigins`, the Android app).
+- README: the server call is `auth.api.linkSocialAccount` (the endpoint is `/link-social`).
+- `authSettings`: `E2E=1` is refused only on a production server that listens beyond this machine (`NODE_ENV=production` and `HOST` not a loopback address). 0.2.0 refused it whenever `NODE_ENV` was production, which also stopped E2E servers that run the production build on `127.0.0.1` (the jgb-starter Bun stack).
+
 ## 0.2.0
 
 - `@jgb-solutions/kit/auth`: Better Auth set up the same way in every app. Pieces (`authSettings`, `trustedBaseUrl`, `passkeyOrigins`, `androidOrigin`, `assetLinks`, `RATE_LIMIT_RULES`, `counterRateLimit`, `googleProvider`, `CONFIRMED_ACCOUNT_LINKING`, `freeUsername`, `afterAccountSaved`, `pictureFromIdToken`, `signedInFlagHook`, `asPublicRequest`, `toAuthUser`) and the preset `standardAuthOptions`: username or email with a password, passkeys, Google that joins only confirmed accounts (connect Google from the account page otherwise), roles and the first admins (`ADMIN_EMAILS`, confirmed addresses only), Bearer sessions for the mobile app, rate limits, no email ever sent.

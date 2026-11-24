@@ -48,12 +48,15 @@ export type AuthSettings = {
  * Sign-in settings from the environment, the same on every host: BETTER_AUTH_SECRET, SIGN_UP,
  * ADMIN_EMAILS, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_MOBILE_CLIENT_IDS (comma-separated:
  * the Android and iOS clients). E2E=1 marks the E2E test server: its stand-in secret and its rate
- * limits off are refused when NODE_ENV is production, so a stray E2E=1 can't start production with a
- * public secret. Throws without a secret.
+ * limits off are refused on a production server that listens beyond this machine (NODE_ENV=production
+ * with HOST unset or not a loopback address), so a stray E2E=1 can't start production with a public
+ * secret. E2E servers run a production build on 127.0.0.1. Throws without a secret.
  */
 export function authSettings(env: Env): AuthSettings {
   const e2e = env.E2E === '1'
-  if (e2e && env.NODE_ENV === 'production') throw new Error('E2E=1 is set in production: remove it.')
+  const loopback = ['127.0.0.1', '::1', 'localhost'].includes((env.HOST ?? '').trim().toLowerCase())
+  if (e2e && env.NODE_ENV === 'production' && !loopback)
+    throw new Error('E2E=1 is set on a production server that listens beyond this machine: remove it.')
   const secret = env.BETTER_AUTH_SECRET || (e2e ? E2E_SECRET : '')
   if (!secret) throw new Error('BETTER_AUTH_SECRET is not set.')
   const list = (value: string | undefined) =>
@@ -372,7 +375,14 @@ export type StandardAuthInput<A extends AdminOptions> = {
   takenUsernames: (candidates: string[]) => Promise<ReadonlySet<string>>
   /** The username base when a name gives too little ("listener", "member"…). */
   usernameFallback: string
-  /** Local origins allowed to use passkeys (development and E2E): `['http://localhost:5173']`. */
+  /**
+   * Which origins may use passkeys. `'listed'` (the default): the site, `localOrigins` and the Android
+   * app (`androidCertSha256`). `'request'`: the request's own origin, which `trustedBaseUrl` limits to
+   * the site and local hosts, so the site, previews and any local port work, each with its own
+   * passkeys. `'request'` can't serve the Android app.
+   */
+  passkeyOrigin?: 'listed' | 'request'
+  /** Local origins allowed to use passkeys (development and E2E) with `passkeyOrigin: 'listed'`: `['http://localhost:5173']`. */
   localOrigins?: readonly string[]
   /** The Android app's signing certificates (SHA-256, `AB:CD:…`), for passkeys in the app. */
   androidCertSha256?: readonly string[]
@@ -403,6 +413,9 @@ export type StandardAuthInput<A extends AdminOptions> = {
  */
 export function standardAuthOptions<A extends AdminOptions>(input: StandardAuthInput<A>) {
   const { settings } = input
+  const fromRequest = input.passkeyOrigin === 'request'
+  if (fromRequest && (input.androidCertSha256?.length || input.localOrigins?.length))
+    throw new Error("passkeyOrigin 'request' can't take androidCertSha256 or localOrigins: use 'listed'.")
   const days = input.sessionDays ?? 30
   return {
     appName: input.appName,
@@ -462,10 +475,15 @@ export function standardAuthOptions<A extends AdminOptions>(input: StandardAuthI
       username({ minUsernameLength: USERNAME.min, maxUsernameLength: USERNAME.max }),
       passkey({
         rpName: input.appName,
-        origin: passkeyOrigins(input.siteUrl, {
-          ...(input.localOrigins ? { local: input.localOrigins } : {}),
-          ...(input.androidCertSha256 ? { androidCertSha256: input.androidCertSha256 } : {}),
-        }),
+        // Without an origin list, Better Auth checks passkeys against the request's own origin.
+        ...(fromRequest
+          ? {}
+          : {
+              origin: passkeyOrigins(input.siteUrl, {
+                ...(input.localOrigins ? { local: input.localOrigins } : {}),
+                ...(input.androidCertSha256 ? { androidCertSha256: input.androidCertSha256 } : {}),
+              }),
+            }),
       }),
       admin(input.admin),
       bearer(),

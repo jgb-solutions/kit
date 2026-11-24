@@ -1,7 +1,7 @@
 {
   "name": "@jgb-solutions/kit",
-  "version": "0.1.1",
-  "description": "Generic plumbing for web apps on Bun and Cloudflare Workers: small, typed, tree-shakable modules.",
+  "version": "0.2.0",
+  "description": "Generic plumbing for web apps on Bun and Cloudflare Workers: small, typed, tree-shakable modules (Cloudflare Access, Better Auth).",
   "license": "MIT",
   "author": "JGB Solutions",
   "repository": {
@@ -15,7 +15,11 @@
     "jwt",
     "jose",
     "bun",
-    "cloudflare-workers"
+    "cloudflare-workers",
+    "better-auth",
+    "passkeys",
+    "orpc",
+    "expo"
   ],
   "type": "module",
   "sideEffects": false,
@@ -29,6 +33,26 @@
     "./access": {
       "types": "./dist/access.d.ts",
       "import": "./dist/access.js"
+    },
+    "./auth": {
+      "types": "./dist/auth.d.ts",
+      "import": "./dist/auth.js"
+    },
+    "./auth/bun": {
+      "types": "./dist/auth/bun.d.ts",
+      "import": "./dist/auth/bun.js"
+    },
+    "./auth/orpc": {
+      "types": "./dist/auth/orpc.d.ts",
+      "import": "./dist/auth/orpc.js"
+    },
+    "./auth/rules": {
+      "types": "./dist/auth/rules.d.ts",
+      "import": "./dist/auth/rules.js"
+    },
+    "./auth/expo": {
+      "types": "./dist/auth/expo.d.ts",
+      "import": "./dist/auth/expo.js"
     },
     "./package.json": "./package.json"
   },
@@ -47,13 +71,33 @@
     "format": "bun fmt .",
     "format:check": "bun fmt --check .",
     "check:package": "bun scripts/check-package.ts",
-    "prepublishOnly": "bun run build && bun run check:package"
+    "prepublishOnly": "bun run build && bun run check:package",
+    "check:install": "bun scripts/check-install.ts"
   },
   "dependencies": {
     "jose": "6.2.18"
   },
+  "peerDependencies": {
+    "better-auth": ">=1.7.22 <2",
+    "@better-auth/passkey": ">=1.7.22 <2",
+    "@orpc/server": ">=2.0.0-beta.52 <3"
+  },
+  "peerDependenciesMeta": {
+    "better-auth": {
+      "optional": true
+    },
+    "@better-auth/passkey": {
+      "optional": true
+    },
+    "@orpc/server": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@better-auth/passkey": "1.7.27",
+    "@orpc/server": "2.0.0-beta.52",
     "@types/bun": "1.4.5",
+    "better-auth": "1.7.27",
     "typescript": "6.0.3"
   }
 }

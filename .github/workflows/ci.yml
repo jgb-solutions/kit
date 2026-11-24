@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      # A frozen install: fails if bun.lock and package.json disagree.
+      - run: bun ci
+      - run: bun audit --audit-level=high
+      - run: bun run format:check
+      - run: bun run typecheck
+      - run: bun run test
+      # The published files: built, loadable, and free of anything app-specific (scripts/check-package.ts).
+      - run: bun run build
+      - run: bun run check:package

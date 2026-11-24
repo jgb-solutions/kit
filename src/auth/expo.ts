@@ -178,7 +178,7 @@ export function createMobileAuth<U>(config: MobileAuthConfig<U>) {
     /**
      * Connects Google to the signed-in account (its account page), with an ID token from the app's
      * Google Sign-In SDK: afterwards "Continue with Google" signs into this account. The Google address
-     * may differ from the account's. Other sessions of the account end; this one stays.
+     * may differ from the account's. Every session of the account stays.
      */
     async linkGoogle(idToken: string, options: { nonce?: string } = {}): Promise<AuthResult> {
       if (!token) return { ok: false, code: 'NO_SESSION' }

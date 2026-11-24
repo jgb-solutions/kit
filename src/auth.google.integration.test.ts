@@ -120,7 +120,28 @@ describe('Google, merge only confirmed', () => {
     expect(again.status).toBe(200)
   })
 
-  test('connecting Google while signed in: any Google address, this session stays, the others end', async () => {
+  test("a Google sign-in from a browser signed into another account still ends the joined account's sessions", async () => {
+    const { auth } = await makeAuth()
+    const someone = await signUp(auth, { name: 'Other', username: 'other', email: 'other@example.com' })
+    const someoneToken = someone.headers.get('set-auth-token') ?? ''
+    const created = await signUp(auth, { name: 'Bo', username: 'bobby', email: 'bo@example.com' })
+    const { user } = (await created.json()) as { user: { id: string } }
+    const boToken = created.headers.get('set-auth-token') ?? ''
+    await (await auth.$context).internalAdapter.updateUser(user.id, { emailVerified: true })
+
+    const joined = await auth.handler(
+      post(
+        '/sign-in/social',
+        { provider: 'google', disableRedirect: true, idToken: { token: await googleToken('bo@example.com', 'g-bo') } },
+        { authorization: `Bearer ${someoneToken}` },
+      ),
+    )
+    expect(joined.status).toBe(200)
+    expect(await auth.api.getSession({ headers: new Headers({ authorization: `Bearer ${boToken}` }) })).toBeNull()
+    expect(await auth.api.getSession({ headers: new Headers({ authorization: `Bearer ${someoneToken}` }) })).not.toBeNull()
+  })
+
+  test('connecting Google while signed in: any Google address, and every session stays', async () => {
     const { auth, providersOf } = await makeAuth()
     // A username account: its address is a placeholder that no Google address could match.
     const created = await signUp(auth, { name: 'Cyrus', username: 'cyrus', email: 'x1@users.invalid' })
@@ -139,7 +160,8 @@ describe('Google, merge only confirmed', () => {
     expect(linked.status).toBe(200)
     expect(providersOf(user.id)).toEqual(['credential', 'google'])
     expect(await auth.api.getSession({ headers: new Headers({ authorization: `Bearer ${mine}` }) })).not.toBeNull()
-    expect(await auth.api.getSession({ headers: new Headers({ authorization: `Bearer ${other}` }) })).toBeNull()
+    // The owner's other device stays signed in (Control Center, 2026-11-24).
+    expect(await auth.api.getSession({ headers: new Headers({ authorization: `Bearer ${other}` }) })).not.toBeNull()
     const ctx = await auth.$context
     expect(await ctx.internalAdapter.findUserById(user.id)).toMatchObject({ image: PICTURE })
 

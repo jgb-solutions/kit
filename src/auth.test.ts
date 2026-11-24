@@ -153,8 +153,7 @@ describe('Google joining an account', () => {
   const adapter = (providers: string[], image: string | null = null) => ({
     findAccounts: mock(async () => providers.map((providerId) => ({ providerId }))),
     deleteUserSessions: mock(async () => undefined),
-    listSessions: mock(async () => [{ token: 'mine' }, { token: 'other1' }, { token: 'other2' }]),
-    deleteSessions: mock(async () => undefined),
+    findSession: mock(async () => null),
     findUserById: mock(async () => ({ image })),
     updateUser: mock(async () => undefined),
   })
@@ -178,14 +177,19 @@ describe('Google joining an account', () => {
     expect(pictureFromIdToken(null)).toBeNull()
   })
 
-  test('connecting Google while signed in keeps that session and ends the others', async () => {
+  test('connected by the signed-in owner: every session stays', async () => {
     const linked = adapter(['credential', 'google'])
-    expect(await afterAccountSaved({ providerId: 'google', userId: 'u1' }, linked, 'mine')).toBe(true)
-    expect(linked.deleteSessions).toHaveBeenCalledWith(['other1', 'other2'])
+    expect(await afterAccountSaved({ providerId: 'google', userId: 'u1' }, linked, 'u1')).toBe(true)
     expect(linked.deleteUserSessions).not.toHaveBeenCalled()
   })
 
-  test('signs the account out everywhere; leaves new Google accounts and passwords alone', async () => {
+  test('signed in as someone else is a join, not a connection: every session ends', async () => {
+    const joined = adapter(['credential', 'google'])
+    expect(await afterAccountSaved({ providerId: 'google', userId: 'u1' }, joined, 'someone-else')).toBe(true)
+    expect(joined.deleteUserSessions).toHaveBeenCalledWith('u1')
+  })
+
+  test('a Google sign-in that joins ends every session; new Google accounts and passwords are left alone', async () => {
     const joined = adapter(['credential', 'google'])
     expect(await afterAccountSaved({ providerId: 'google', userId: 'u1' }, joined)).toBe(true)
     expect(joined.deleteUserSessions).toHaveBeenCalledWith('u1')

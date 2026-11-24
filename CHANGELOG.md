@@ -2,6 +2,10 @@
 
 All notable changes to `@jgb-solutions/kit`. Versions follow semver.
 
+## 0.2.2
+
+- Connecting Google while signed in (`/link-social`, `linkGoogle`) keeps every session of the account: the owner proved both sides, and signing their other devices out would be a bad surprise. A Google sign-in that joins a confirmed account still ends every session of that account. The hook tells them apart by who is signed in: a browser holding another account's session counts as a join. `afterAccountSaved(account, adapter, signedInUserId)` replaces 0.2.0's `keepSessionToken`, and `AccountAdapter` uses `findSession` instead of `listSessions` and `deleteSessions`.
+
 ## 0.2.1
 
 - `standardAuthOptions({ passkeyOrigin: 'request' })`: passkeys checked against the request's own origin, which `trustedBaseUrl` limits to the site and local hosts, so the site, previews and any local port each work (the jgb-starter template's setup). The default, `'listed'`, keeps the fixed list (the site, `localOrigins`, the Android app).

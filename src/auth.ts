@@ -237,39 +237,37 @@ export function pictureFromIdToken(idToken: string | null | undefined): string |
   }
 }
 
-/** The part of Better Auth's internal adapter `afterAccountSaved` uses. */
+/** The part of Better Auth's internal adapter `afterAccountSaved` and its hook use. */
 export type AccountAdapter = {
   findAccounts(userId: string): Promise<{ providerId: string }[]>
   deleteUserSessions(userId: string): Promise<unknown>
-  listSessions(userId: string): Promise<{ token: string }[]>
-  deleteSessions(tokens: string[]): Promise<unknown>
+  findSession(token: string): Promise<{ user: { id: string } } | null>
   findUserById(userId: string): Promise<{ image?: string | null | undefined } | null>
   updateUser(userId: string, data: { image: string }): Promise<unknown>
 }
 
 /**
- * After an account row is saved: when it is Google joining an account that already had another way
- * in, the account's other sessions end (a session someone else held doesn't carry on), and the account
- * takes Google's picture if it had none. `keepSessionToken` is the session of the person connecting
- * Google from their account page, which stays; a Google sign-in that joins an account ends them all
- * and gets its own right after. Returns whether it was such a join.
+ * After an account row is saved, when it is Google joining an account that already had another way in:
+ *
+ * - **Connected by the signed-in owner** (`signedInUserId` is the account's own, through Better
+ *   Auth's `/link-social`): every session stays. The owner proved both sides, and signing their phone
+ *   out because they connected Google on the web would be a bad surprise (Control Center, 2026-11-24).
+ * - **Joined by a Google sign-in** (into a confirmed account, "merge only confirmed"): every session
+ *   of the account ends, so one someone else held doesn't carry on. The Google sign-in gets its own
+ *   session right after. Rare, and defensive.
+ *
+ * Either way, the account takes Google's picture if it had none. Returns whether it was such a join or
+ * connection.
  */
 export async function afterAccountSaved(
   account: { providerId: string; userId: string; idToken?: string | null | undefined },
   adapter: AccountAdapter,
-  keepSessionToken?: string | null,
+  signedInUserId?: string | null,
 ): Promise<boolean> {
   if (account.providerId !== 'google') return false
   const accounts = await adapter.findAccounts(account.userId)
   if (!accounts.some((other) => other.providerId !== 'google')) return false
-  if (keepSessionToken) {
-    const others = (await adapter.listSessions(account.userId))
-      .map((session) => session.token)
-      .filter((token) => token !== keepSessionToken)
-    if (others.length) await adapter.deleteSessions(others)
-  } else {
-    await adapter.deleteUserSessions(account.userId)
-  }
+  if (signedInUserId !== account.userId) await adapter.deleteUserSessions(account.userId)
   const picture = pictureFromIdToken(account.idToken)
   if (picture) {
     const user = await adapter.findUserById(account.userId)
@@ -282,7 +280,7 @@ export async function afterAccountSaved(
 type AccountHookContext = {
   context: {
     internalAdapter: AccountAdapter
-    session?: { session: { token: string } } | null
+    session?: { user: { id: string } } | null
     authCookies: { sessionToken: { name: string } }
     secret: string
   }
@@ -290,14 +288,16 @@ type AccountHookContext = {
 }
 
 /**
- * The session of the person behind the request, when there is one: set on `linkSocial` (signed in),
- * read from the session cookie on the OAuth callback that completes it. Null on a sign-in.
+ * Who is signed in behind the request, when anyone is: from the session on `/link-social` (cookie or
+ * Bearer), or from the session cookie on the OAuth callback that completes a connection. A browser
+ * holding another account's session is someone else, never the owner. Null on a plain sign-in.
  */
-async function currentSessionToken(ctx: AccountHookContext): Promise<string | null> {
-  const token =
-    ctx.context.session?.session.token ??
-    (await ctx.getSignedCookie(ctx.context.authCookies.sessionToken.name, ctx.context.secret).catch(() => null))
-  return typeof token === 'string' && token ? token : null
+async function signedInUserId(ctx: AccountHookContext): Promise<string | null> {
+  if (ctx.context.session) return ctx.context.session.user.id
+  const token = await ctx.getSignedCookie(ctx.context.authCookies.sessionToken.name, ctx.context.secret).catch(() => null)
+  if (typeof token !== 'string' || !token) return null
+  const found = await ctx.context.internalAdapter.findSession(token).catch(() => null)
+  return found?.user.id ?? null
 }
 
 /**
@@ -464,7 +464,7 @@ export function standardAuthOptions<A extends AdminOptions>(input: StandardAuthI
             account: { providerId: string; userId: string; idToken?: string | null | undefined },
             ctx: AccountHookContext | null,
           ) => {
-            if (ctx) await afterAccountSaved(account, ctx.context.internalAdapter, await currentSessionToken(ctx))
+            if (ctx) await afterAccountSaved(account, ctx.context.internalAdapter, await signedInUserId(ctx))
           },
         },
       },

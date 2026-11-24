@@ -56,7 +56,7 @@ bun add @jgb-solutions/kit better-auth @better-auth/passkey
 import { betterAuth } from 'better-auth'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { authSettings, standardAuthOptions } from '@jgb-solutions/kit/auth'
-import { argon2idHasher } from '@jgb-solutions/kit/auth/bun' // on Bun; Workers keep Better Auth's scrypt
+import { argon2idHasher } from '@jgb-solutions/kit/auth/bun' // on Bun (Workers keep Better Auth's scrypt); fallbackVerify for older hashes
 
 export const auth = betterAuth(
   standardAuthOptions({

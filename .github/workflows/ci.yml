@@ -27,3 +27,5 @@ jobs:
       # The published files: built, loadable, and free of anything app-specific (scripts/check-package.ts).
       - run: bun run build
       - run: bun run check:package
+      # kit/access, kit/auth/rules and kit/auth/expo installed without the optional peers: they load and type-check.
+      - run: bun run check:install

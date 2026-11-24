@@ -147,6 +147,8 @@ describe('Google joining an account', () => {
   const adapter = (providers: string[], image: string | null = null) => ({
     findAccounts: mock(async () => providers.map((providerId) => ({ providerId }))),
     deleteUserSessions: mock(async () => undefined),
+    listSessions: mock(async () => [{ token: 'mine' }, { token: 'other1' }, { token: 'other2' }]),
+    deleteSessions: mock(async () => undefined),
     findUserById: mock(async () => ({ image })),
     updateUser: mock(async () => undefined),
   })
@@ -168,6 +170,13 @@ describe('Google joining an account', () => {
     expect(pictureFromIdToken(token({ picture: `https://example.com/${'a'.repeat(2000)}` }))).toBeNull()
     expect(pictureFromIdToken('not-a-token')).toBeNull()
     expect(pictureFromIdToken(null)).toBeNull()
+  })
+
+  test('connecting Google while signed in keeps that session and ends the others', async () => {
+    const linked = adapter(['credential', 'google'])
+    expect(await afterAccountSaved({ providerId: 'google', userId: 'u1' }, linked, 'mine')).toBe(true)
+    expect(linked.deleteSessions).toHaveBeenCalledWith(['other1', 'other2'])
+    expect(linked.deleteUserSessions).not.toHaveBeenCalled()
   })
 
   test('signs the account out everywhere; leaves new Google accounts and passwords alone', async () => {

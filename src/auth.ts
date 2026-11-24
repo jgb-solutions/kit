@@ -169,15 +169,25 @@ export function counterRateLimit(store: () => CounterStore, now: () => number = 
 }
 
 /**
- * Account linking, "merge automatically": a Google sign-in whose address matches an account joins it,
- * only when Google verified the address (Google isn't a trusted provider, so Better Auth checks
- * `email_verified`). The app's own addresses are never verified (no email is sent), so the local check
- * is off. The account keeps its name and picture (afterAccountSaved adds Google's picture if it had none).
+ * Account linking, "merge only confirmed" (owner, 2026-11-24):
+ *
+ * - **Signing in with Google** joins an existing account with the same address only when both
+ *   addresses are confirmed: Google's (`email_verified`; Google isn't a trusted provider) and the
+ *   account's own. The app never sends email, so an account's address is confirmed only when it was
+ *   made with Google or by an admin. Otherwise Better Auth refuses (`ACCOUNT_NOT_LINKED` after
+ *   `authErrorCode`): someone could have signed up first with another person's address and a password
+ *   they know. The person signs in with their password and connects Google from their account page.
+ * - **Connecting Google while signed in** (Better Auth's `linkSocial`) proves both sides, so the Google
+ *   address may differ from the account's: accounts made with a username have a placeholder address
+ *   that could never match.
+ *
+ * The account keeps its name and picture (afterAccountSaved adds Google's picture if it had none).
  */
-export const MERGE_VERIFIED_LINKING = {
+export const CONFIRMED_ACCOUNT_LINKING = {
   enabled: true,
   trustedProviders: [] as string[],
-  requireLocalEmailVerified: false,
+  requireLocalEmailVerified: true,
+  allowDifferentEmails: true,
   updateUserInfoOnLink: false,
 }
 
@@ -228,30 +238,63 @@ export function pictureFromIdToken(idToken: string | null | undefined): string |
 export type AccountAdapter = {
   findAccounts(userId: string): Promise<{ providerId: string }[]>
   deleteUserSessions(userId: string): Promise<unknown>
+  listSessions(userId: string): Promise<{ token: string }[]>
+  deleteSessions(tokens: string[]): Promise<unknown>
   findUserById(userId: string): Promise<{ image?: string | null | undefined } | null>
   updateUser(userId: string, data: { image: string }): Promise<unknown>
 }
 
 /**
  * After an account row is saved: when it is Google joining an account that already had another way
- * in, every session of that account ends (a session someone else held doesn't carry on; the Google
- * sign-in gets its own right after), and the account takes Google's picture if it had none. Returns
- * whether it was such a join.
+ * in, the account's other sessions end (a session someone else held doesn't carry on), and the account
+ * takes Google's picture if it had none. `keepSessionToken` is the session of the person connecting
+ * Google from their account page, which stays; a Google sign-in that joins an account ends them all
+ * and gets its own right after. Returns whether it was such a join.
  */
 export async function afterAccountSaved(
   account: { providerId: string; userId: string; idToken?: string | null | undefined },
   adapter: AccountAdapter,
+  keepSessionToken?: string | null,
 ): Promise<boolean> {
   if (account.providerId !== 'google') return false
   const accounts = await adapter.findAccounts(account.userId)
   if (!accounts.some((other) => other.providerId !== 'google')) return false
-  await adapter.deleteUserSessions(account.userId)
+  if (keepSessionToken) {
+    const others = (await adapter.listSessions(account.userId))
+      .map((session) => session.token)
+      .filter((token) => token !== keepSessionToken)
+    if (others.length) await adapter.deleteSessions(others)
+  } else {
+    await adapter.deleteUserSessions(account.userId)
+  }
   const picture = pictureFromIdToken(account.idToken)
   if (picture) {
     const user = await adapter.findUserById(account.userId)
     if (user && !user.image) await adapter.updateUser(account.userId, { image: picture })
   }
   return true
+}
+
+/** The part of Better Auth's endpoint context the account hook reads. */
+type AccountHookContext = {
+  context: {
+    internalAdapter: AccountAdapter
+    session?: { session: { token: string } } | null
+    authCookies: { sessionToken: { name: string } }
+    secret: string
+  }
+  getSignedCookie(name: string, secret: string): Promise<string | null | false | undefined>
+}
+
+/**
+ * The session of the person behind the request, when there is one: set on `linkSocial` (signed in),
+ * read from the session cookie on the OAuth callback that completes it. Null on a sign-in.
+ */
+async function currentSessionToken(ctx: AccountHookContext): Promise<string | null> {
+  const token =
+    ctx.context.session?.session.token ??
+    (await ctx.getSignedCookie(ctx.context.authCookies.sessionToken.name, ctx.context.secret).catch(() => null))
+  return typeof token === 'string' && token ? token : null
 }
 
 /**
@@ -354,7 +397,7 @@ export type StandardAuthInput<A extends AdminOptions> = {
 /**
  * The standard Better Auth options, for `betterAuth(standardAuthOptions({...}))`: username and email
  * sign-in with a password (no email ever sent: nothing to verify, no reset link), passkeys, Google
- * when its keys are set (merge-verified linking, a username from the name), roles through the admin
+ * when its keys are set (it joins only confirmed accounts; a username from the name), roles through the admin
  * plugin with the first admins from ADMIN_EMAILS (confirmed addresses only), the bearer plugin for the mobile app, rate limits,
  * 30-day sessions and a 5-minute cookie cache.
  */
@@ -375,7 +418,7 @@ export function standardAuthOptions<A extends AdminOptions>(input: StandardAuthI
       ...(input.password ? { password: input.password } : {}),
     },
     ...(settings.google ? { socialProviders: { google: googleProvider(settings.google, { signUp: settings.signUp }) } } : {}),
-    account: { accountLinking: MERGE_VERIFIED_LINKING },
+    account: { accountLinking: CONFIRMED_ACCOUNT_LINKING },
     session: { expiresIn: days * 24 * 60 * 60, updateAge: 24 * 60 * 60, cookieCache: { enabled: true, maxAge: 5 * 60 } },
     ...(input.beforeDeleteUser ? { user: { deleteUser: { enabled: true, beforeDelete: input.beforeDeleteUser } } } : {}),
     rateLimit: {
@@ -406,9 +449,9 @@ export function standardAuthOptions<A extends AdminOptions>(input: StandardAuthI
         create: {
           after: async (
             account: { providerId: string; userId: string; idToken?: string | null | undefined },
-            ctx: { context: { internalAdapter: AccountAdapter } } | null,
+            ctx: AccountHookContext | null,
           ) => {
-            if (ctx) await afterAccountSaved(account, ctx.context.internalAdapter)
+            if (ctx) await afterAccountSaved(account, ctx.context.internalAdapter, await currentSessionToken(ctx))
           },
         },
       },

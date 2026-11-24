@@ -80,13 +80,23 @@ What the preset sets:
 - **Passwords:** 12 to 128 characters, with no email verification and no reset link (no email is ever sent). `SIGN_UP=off` closes sign-up; existing accounts still sign in.
 - **Usernames** (Better Auth's username plugin): 3 to 30 characters, lower-case letters, digits, dots and underscores. An account made without one (Google) gets one from its name, with a number when it's taken.
 - **Passkeys** for the site, the `localOrigins` and the Android app (`androidCertSha256`).
-- **Google**, when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set. `GOOGLE_MOBILE_CLIENT_IDS` adds the apps' clients, for ID-token sign-in. A Google address that matches an account joins it only when Google verified it; that first join signs the account out everywhere else, and the account takes Google's picture only if it had none.
+- **Google**, when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set. `GOOGLE_MOBILE_CLIENT_IDS` adds the apps' clients, for ID-token sign-in. A new Google address makes a new account with a confirmed address. Joining existing accounts is "merge only confirmed" (see below).
 - **Roles:** Better Auth's admin plugin, with the app's access control. A new account whose address is in `ADMIN_EMAILS` starts as admin when it's created with Google (a confirmed address); a sign-up with that address by email and password starts as an ordinary user, so nobody can claim an admin's address first. Other first admins are promoted from the server (the app's admin script).
 - **The mobile app:** the bearer plugin.
 - **Limits:** 60 requests a minute, tighter on sign-in, sign-up, passkeys and password changes (`RATE_LIMIT_RULES`). Counts go in the database, or in a counter store with `rateLimitStorage: counterRateLimit(() => redis)`, which lets attempts through when the store is down.
 - **Sessions:** 30 days, renewed daily, with a 5-minute cookie cache. The base URL is the request's host only for the site or a local host; anything else falls back to the site.
 
-Everything the preset uses is exported on its own, for an app that needs a different mix (`authSettings`, `trustedBaseUrl`, `passkeyOrigins`, `androidOrigin`, `assetLinks`, `googleProvider`, `MERGE_VERIFIED_LINKING`, `freeUsername`, `afterAccountSaved`, `pictureFromIdToken`, `signedInFlagHook`, `asPublicRequest`, `toAuthUser`). What stays in the app is its own: its name and address, database and schema (`bunx auth@latest generate`), roles and permissions, texts, pages, and its Google, Android and Access identifiers.
+#### Google and existing accounts: merge only confirmed
+
+The app never sends email, so an address typed at sign-up is never confirmed. Someone could sign up first with another person's address and a password they know. So **"Continue with Google" joins an existing account with the same address only when that account's address is confirmed**: it was made with Google, or by an admin. Otherwise Better Auth refuses, and the app shows the way in:
+
+1. **On the sign-in page**, the refusal arrives as `?error=account_not_linked` after Google's redirect, or as an error body from an ID-token sign-in. `authErrorCode(answer)` (`kit/auth/rules`) turns either into `ACCOUNT_NOT_LINKED`. The page says: _An account with this address already exists. Sign in with your password, then connect Google from your account page._
+2. **On the account page**, "Connect Google" calls Better Auth's `linkSocial` for the signed-in person: `auth.api.linkSocial({ body: { provider: 'google', callbackURL: '/account', errorCallbackURL: '/account' }, headers })` on the website (go to the `url` it returns), or `auth.linkGoogle(idToken)` in the app. The Google address may differ from the account's (username accounts have a placeholder address). The account's other sessions end, this one stays, and the account takes Google's picture if it had none. From then on, "Continue with Google" signs into it.
+3. A Google account that already belongs to another account gives `GOOGLE_ALREADY_LINKED`. A Google address Google didn't verify gives `GOOGLE_EMAIL_NOT_CONFIRMED`.
+
+When Google joins a confirmed account that also has a password, that account's other sessions end too.
+
+Everything the preset uses is exported on its own, for an app that needs a different mix (`authSettings`, `trustedBaseUrl`, `passkeyOrigins`, `androidOrigin`, `assetLinks`, `googleProvider`, `CONFIRMED_ACCOUNT_LINKING`, `freeUsername`, `afterAccountSaved`, `pictureFromIdToken`, `signedInFlagHook`, `asPublicRequest`, `toAuthUser`). What stays in the app is its own: its name and address, database and schema (`bunx auth@latest generate`), roles and permissions, texts, pages, and its Google, Android and Access identifiers.
 
 #### `kit/auth/orpc`: the person in `context.user`
 
@@ -104,7 +114,7 @@ const { withUser, requireUser, requireAdmin } = authMiddleware({
 
 #### `kit/auth/rules`: the same rules in the browser
 
-`USERNAME`, `PASSWORD`, `usernameProblem`, `isPlaceholderEmail`, `placeholderEmail`, `defineRoles({ roles, defaultRole, adminPanel })` (`roleOf`, `canOpenAdmin`, `isRole`), the `AuthUser` type, `avatarSrc` (https pictures only, sized) and `avatarInitials`. No dependencies.
+`USERNAME`, `PASSWORD`, `usernameProblem`, `isPlaceholderEmail`, `placeholderEmail`, `defineRoles({ roles, defaultRole, adminPanel })` (`roleOf`, `canOpenAdmin`, `isRole`), the `AuthUser` type, `authErrorCode` with `ACCOUNT_NOT_LINKED`, `GOOGLE_ALREADY_LINKED` and `GOOGLE_EMAIL_NOT_CONFIRMED`, `avatarSrc` (https pictures only, sized) and `avatarInitials`. No dependencies.
 
 #### `kit/auth/expo`: the mobile app
 
@@ -118,11 +128,12 @@ export const auth = createMobileAuth({ origin: 'https://app.example.com', storag
 const session = useSyncExternalStore(auth.subscribe, auth.getSession)
 await auth.signIn('maria', password) // or an email address
 await auth.signInWithGoogle(idToken) // from the app's Google Sign-In SDK
+await auth.linkGoogle(idToken) // signed in: connect Google from the account screen
 await auth.signInWithPasskey(Passkeys)
 new RPCLink({ url, headers: auth.authHeaders }) // Bearer on every RPC call
 ```
 
-Failures come back as codes (`INVALID_USERNAME_OR_PASSWORD`, `TOO_MANY_REQUESTS`, `NETWORK`, `CANCELLED`…), and the app words them. The module has no dependencies: the app passes in its secure storage and passkey modules.
+Failures come back as codes (`INVALID_USERNAME_OR_PASSWORD`, `ACCOUNT_NOT_LINKED`, `GOOGLE_ALREADY_LINKED`, `TOO_MANY_REQUESTS`, `NETWORK`, `CANCELLED`…), and the app words them. The module has no dependencies: the app passes in its secure storage and passkey modules.
 
 ## What goes in, and what never goes in
 

@@ -114,6 +114,22 @@ describe('createMobileAuth', () => {
     expect(calls[1]?.body).toEqual({ provider: 'google', disableRedirect: true, idToken: { token: 'id-token', nonce: 'n' } })
   })
 
+  test('Google: a refused join is ACCOUNT_NOT_LINKED; linkGoogle connects with the Bearer session', async () => {
+    const { fetch, calls } = fakeFetch({
+      '/sign-in/social': () => new Response(JSON.stringify({ code: 'OAUTH_LINK_ERROR', message: 'account not linked' }), { status: 401 }),
+      '/link-social': () => new Response(JSON.stringify({ status: true, redirect: false, url: '' })),
+    })
+    const storage = memoryStorage({ k: 't8' })
+    const auth = createMobileAuth<User>({ origin: ORIGIN, storage, tokenKey: 'k', fetchMe: async () => ({ id: 'u1' }), fetch })
+    expect(await auth.signInWithGoogle('id-token')).toEqual({ ok: false, code: 'ACCOUNT_NOT_LINKED' })
+    expect(await auth.linkGoogle('id-token')).toEqual({ ok: false, code: 'NO_SESSION' })
+    await auth.restore()
+    expect(await auth.linkGoogle('id-token')).toEqual({ ok: true })
+    const link = calls.find((call) => call.path === '/link-social')
+    expect(link?.headers.get('authorization')).toBe('Bearer t8')
+    expect(link?.body).toEqual({ provider: 'google', disableRedirect: true, idToken: { token: 'id-token' } })
+  })
+
   test('passkeys: sign in with the assertion; a cancelled prompt is CANCELLED', async () => {
     const { fetch, calls } = fakeFetch({
       '/passkey/generate-authenticate-options': () => new Response(JSON.stringify({ challenge: 'c' })),

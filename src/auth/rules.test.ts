@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  ACCOUNT_NOT_LINKED,
+  authErrorCode,
   avatarInitials,
+  GOOGLE_ALREADY_LINKED,
+  GOOGLE_EMAIL_NOT_CONFIRMED,
   avatarSrc,
   defineRoles,
   isPlaceholderEmail,
@@ -74,5 +78,21 @@ describe('avatars', () => {
     expect(avatarInitials({ name: 'Maria Lopez', username: 'x' })).toBe('ML')
     expect(avatarInitials({ name: '', username: 'maria_lopez' })).toBe('ML')
     expect(avatarInitials({ name: 'Ana', username: 'ana' })).toBe('A')
+  })
+})
+
+describe('authErrorCode', () => {
+  test("Google's linking refusals, from an API body, a redirect or a code", () => {
+    expect(authErrorCode({ code: 'OAUTH_LINK_ERROR', message: 'account not linked' })).toBe(ACCOUNT_NOT_LINKED)
+    expect(authErrorCode('account_not_linked')).toBe(ACCOUNT_NOT_LINKED)
+    expect(authErrorCode({ code: 'SOCIAL_ACCOUNT_ALREADY_LINKED' })).toBe(GOOGLE_ALREADY_LINKED)
+    expect(authErrorCode('account_already_linked_to_different_user')).toBe(GOOGLE_ALREADY_LINKED)
+    expect(authErrorCode({ code: 'LINKING_NOT_ALLOWED' })).toBe(GOOGLE_EMAIL_NOT_CONFIRMED)
+  })
+
+  test('anything else keeps its code', () => {
+    expect(authErrorCode({ code: 'INVALID_USERNAME_OR_PASSWORD', message: 'x' })).toBe('INVALID_USERNAME_OR_PASSWORD')
+    expect(authErrorCode({ code: 'OAUTH_LINK_ERROR', message: 'other' })).toBe('OAUTH_LINK_ERROR')
+    expect(authErrorCode(null)).toBe('')
   })
 })

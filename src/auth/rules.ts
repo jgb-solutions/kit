@@ -143,3 +143,30 @@ export function avatarInitials(user: { name: string; username: string }): string
     .join('')
     .toUpperCase()
 }
+
+/**
+ * Google refused to join an existing account: one with that address exists, but its address was
+ * never confirmed (an email sign-up). The page says: sign in with your password first, then connect
+ * Google from your account page.
+ */
+export const ACCOUNT_NOT_LINKED = 'ACCOUNT_NOT_LINKED'
+/** Connecting Google failed: that Google account already belongs to another account here. */
+export const GOOGLE_ALREADY_LINKED = 'GOOGLE_ALREADY_LINKED'
+/** Google didn't confirm the address, so the account can't be joined or connected. */
+export const GOOGLE_EMAIL_NOT_CONFIRMED = 'GOOGLE_EMAIL_NOT_CONFIRMED'
+
+/**
+ * One code for the app to word, from whatever Better Auth answered: an error body
+ * (`{ code, message }` from an API call or a server function's APIError), the `?error=` value of an
+ * OAuth redirect (`/sign-in?error=account_not_linked`), or a code. Google's linking refusals become
+ * ACCOUNT_NOT_LINKED, GOOGLE_ALREADY_LINKED and GOOGLE_EMAIL_NOT_CONFIRMED; anything else keeps its
+ * own code ('' when there is none).
+ */
+export function authErrorCode(answer: unknown): string {
+  const code = typeof answer === 'string' ? answer : answer && typeof answer === 'object' && 'code' in answer ? String(answer.code) : ''
+  const message = answer && typeof answer === 'object' && 'message' in answer ? String(answer.message) : ''
+  if (code === 'account_not_linked' || (code === 'OAUTH_LINK_ERROR' && message === 'account not linked')) return ACCOUNT_NOT_LINKED
+  if (code === 'SOCIAL_ACCOUNT_ALREADY_LINKED' || code === 'account_already_linked_to_different_user') return GOOGLE_ALREADY_LINKED
+  if (code === 'LINKING_NOT_ALLOWED' || code === 'email_not_verified' || code === 'EMAIL_NOT_VERIFIED') return GOOGLE_EMAIL_NOT_CONFIRMED
+  return code
+}

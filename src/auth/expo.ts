@@ -15,10 +15,11 @@
  *   await auth.signInWithPasskey(Passkeys)
  *   const rpc = createORPCClient(new RPCLink({ …, headers: auth.authHeaders }))
  *
- * Failures come back as codes (Better Auth's, such as INVALID_USERNAME_OR_PASSWORD, or NETWORK,
- * TOO_MANY_REQUESTS, CANCELLED, NO_TOKEN): the app words them.
+ * Failures come back as codes (Better Auth's, such as INVALID_USERNAME_OR_PASSWORD; the kit's
+ * ACCOUNT_NOT_LINKED and GOOGLE_ALREADY_LINKED from kit/auth/rules; or NETWORK, TOO_MANY_REQUESTS,
+ * CANCELLED, NO_TOKEN): the app words them.
  */
-import { isPlaceholderEmail, placeholderEmail } from './rules'
+import { authErrorCode, isPlaceholderEmail, placeholderEmail } from './rules'
 
 /** What the app passes as `storage`: `expo-secure-store` has exactly this shape. */
 export type SecureStorage = {
@@ -52,7 +53,7 @@ export type MobileAuthConfig<U> = {
 }
 
 function codeOf(body: unknown, fallback: string): string {
-  return typeof body === 'object' && body !== null && 'code' in body ? String(body.code) : fallback
+  return authErrorCode(body) || fallback
 }
 
 function isUnauthorized(error: unknown): boolean {
@@ -172,6 +173,29 @@ export function createMobileAuth<U>(config: MobileAuthConfig<U>) {
         disableRedirect: true,
         idToken: { token: idToken, ...(options.nonce ? { nonce: options.nonce } : {}) },
       })
+    },
+
+    /**
+     * Connects Google to the signed-in account (its account page), with an ID token from the app's
+     * Google Sign-In SDK: afterwards "Continue with Google" signs into this account. The Google address
+     * may differ from the account's. Other sessions of the account end; this one stays.
+     */
+    async linkGoogle(idToken: string, options: { nonce?: string } = {}): Promise<AuthResult> {
+      if (!token) return { ok: false, code: 'NO_SESSION' }
+      try {
+        const { response, body } = await call('/link-social', {
+          method: 'POST',
+          body: {
+            provider: 'google',
+            disableRedirect: true,
+            idToken: { token: idToken, ...(options.nonce ? { nonce: options.nonce } : {}) },
+          },
+        })
+        if (response.status === 429) return { ok: false, code: 'TOO_MANY_REQUESTS' }
+        return response.ok ? { ok: true } : { ok: false, code: codeOf(body, String(response.status)) }
+      } catch {
+        return { ok: false, code: 'NETWORK' }
+      }
     },
 
     /** Signs in with a passkey saved on the phone (or in the person's Google or Apple account). */

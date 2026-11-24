@@ -22,8 +22,11 @@ for (const entry of entrypoints()) {
   if (Object.keys(module).length === 0) problems.push(`${entry.subpath}: ${entry.js} exports nothing`)
 }
 
-const pack = Bun.spawnSync(['npm', 'pack', '--dry-run', '--json', '--ignore-scripts'], { stderr: 'pipe' })
-const files = (JSON.parse(pack.stdout.toString()) as { files: { path: string }[] }[])[0]?.files.map((file) => file.path) ?? []
+// What the tarball would hold, from Bun's own packer (`packed <size> <path>` lines).
+const pack = Bun.spawnSync(['bun', 'pm', 'pack', '--dry-run', '--ignore-scripts'], { stdout: 'pipe', stderr: 'pipe' })
+if (pack.exitCode !== 0) problems.push(`bun pm pack failed: ${pack.stderr.toString().trim()}`)
+const files = [...pack.stdout.toString().matchAll(/^packed\s+\S+\s+(\S+)$/gm)].map((match) => match[1]!)
+if (files.length === 0) problems.push('bun pm pack listed no files')
 const allowed = /^(dist\/[\w.-]+\.(js|d\.ts)|README\.md|LICENSE|package\.json)$/
 for (const file of files) if (!allowed.test(file)) problems.push(`the tarball would include ${file}`)
 

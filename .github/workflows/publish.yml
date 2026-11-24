@@ -53,4 +53,13 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
       - run: npm install -g npm@11
-      - run: npm publish --access public --ignore-scripts
+      # The dist-tag is explicit: a stable version moves "latest", a prerelease (1.2.0-beta.1) goes to
+      # "next" and never becomes what `bun add @jgb-solutions/kit` installs.
+      - name: Publish
+        run: |
+          version=$(bun -p "require('./package.json').version")
+          case "$version" in
+            *-*) tag=next ;;
+            *) tag=latest ;;
+          esac
+          npm publish --access public --ignore-scripts --tag "$tag"

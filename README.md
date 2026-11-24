@@ -68,6 +68,8 @@ A new module goes in `src/<name>.ts` with `src/<name>.test.ts`, and gets its own
 
 ## Publishing
 
-Only GitHub Actions publishes (`.github/workflows/publish.yml`), when a GitHub release is published for the tag `vX.Y.Z` matching `package.json`'s version. It uses npm's trusted publishing (OIDC): no npm token is stored anywhere, and npm attaches a provenance statement that links each version to the commit and workflow that built it. The `npm` environment can hold each publish for the owner's approval.
+Every release from 0.1.1 on comes from GitHub, with provenance. GitHub Actions publishes (`.github/workflows/publish.yml`) when a GitHub release is published for the tag `vX.Y.Z` matching `package.json`'s version, after the run is approved in the `npm` environment. It uses npm's trusted publishing (OIDC): no npm token is stored anywhere, and npm attaches a provenance statement that links each version to the commit and workflow that built it (check it on the package's npm page, or with `npm audit signatures`). A stable version moves the `latest` tag; a prerelease (`1.2.0-beta.1`) goes to `next`.
+
+0.1.0, the first version, was published by hand: npm only lets a trusted publisher be set up on a package that already exists. It has no provenance; its code is the same as 0.1.1's.
 
 Versions follow semver. A breaking change to any module is a new major version.

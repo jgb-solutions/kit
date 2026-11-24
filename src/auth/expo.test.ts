@@ -114,6 +114,28 @@ describe('createMobileAuth', () => {
     expect(calls[1]?.body).toEqual({ provider: 'google', disableRedirect: true, idToken: { token: 'id-token', nonce: 'n' } })
   })
 
+  test('signUp works without a global crypto (React Native): randomId, or NO_RANDOM_ID', async () => {
+    const saved = Object.getOwnPropertyDescriptor(globalThis, 'crypto')!
+    Object.defineProperty(globalThis, 'crypto', { value: undefined, configurable: true, writable: true })
+    try {
+      const { fetch, calls } = fakeFetch({ '/sign-up/email': () => withToken('t6') })
+      const options = { origin: ORIGIN, storage: memoryStorage(), tokenKey: 'k', fetchMe: async () => ({ id: 'u1' }), fetch }
+      // Hermes without a randomId: a code, not a crash, and nothing sent.
+      expect(await createMobileAuth<User>(options).signUp({ username: 'ana', password: 'pw' })).toEqual({ ok: false, code: 'NO_RANDOM_ID' })
+      expect(calls).toHaveLength(0)
+      // An email needs no random id.
+      expect(await createMobileAuth<User>(options).signUp({ username: 'ana', password: 'pw', email: 'ana@example.com' })).toEqual({
+        ok: true,
+      })
+      // With the app's randomId (expo-crypto's randomUUID): the placeholder is made from it.
+      const withId = createMobileAuth<User>({ ...options, randomId: () => '1234-abcd' })
+      expect(await withId.signUp({ username: 'ana', password: 'pw' })).toEqual({ ok: true })
+      expect(calls[1]?.body).toMatchObject({ email: '1234abcd@users.invalid' })
+    } finally {
+      Object.defineProperty(globalThis, 'crypto', saved)
+    }
+  })
+
   test('Google: a refused join is ACCOUNT_NOT_LINKED; linkGoogle connects with the Bearer session', async () => {
     const { fetch, calls } = fakeFetch({
       '/sign-in/social': () => new Response(JSON.stringify({ code: 'OAUTH_LINK_ERROR', message: 'account not linked' }), { status: 401 }),

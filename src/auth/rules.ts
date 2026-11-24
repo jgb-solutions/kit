@@ -30,9 +30,13 @@ export function isPlaceholderEmail(email: string): boolean {
   return email.toLowerCase().endsWith(`@${PLACEHOLDER_EMAIL_DOMAIN}`)
 }
 
-/** A new placeholder address, random enough never to collide. */
-export function placeholderEmail(): string {
-  return `${crypto.randomUUID().replaceAll('-', '')}@${PLACEHOLDER_EMAIL_DOMAIN}`
+/**
+ * A new placeholder address, random enough never to collide. `randomId` defaults to the runtime's
+ * `crypto.randomUUID`; React Native's Hermes has no global `crypto`, so an app there passes its own
+ * (expo-crypto's `randomUUID`).
+ */
+export function placeholderEmail(randomId: () => string = () => globalThis.crypto.randomUUID()): string {
+  return `${randomId().replaceAll('-', '')}@${PLACEHOLDER_EMAIL_DOMAIN}`
 }
 
 /**

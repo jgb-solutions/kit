@@ -44,6 +44,7 @@ describe('placeholder emails', () => {
     expect(isPlaceholderEmail(a.toUpperCase())).toBe(true)
     expect(a).not.toBe(placeholderEmail())
     expect(isPlaceholderEmail('ana@example.com')).toBe(false)
+    expect(placeholderEmail(() => 'ab-cd')).toBe('abcd@users.invalid')
   })
 })
 

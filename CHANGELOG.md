@@ -2,6 +2,10 @@
 
 All notable changes to `@jgb-solutions/kit`. Versions follow semver.
 
+## 0.2.3
+
+- `createMobileAuth({ randomId })` (`kit/auth/expo`): signing up without an email no longer needs a global `crypto`. React Native's Hermes has none, so `signUp` crashed there ("Property 'crypto' doesn't exist", found in the jgb-starter app template). Pass expo-crypto's `randomUUID`; it defaults to the runtime's `crypto.randomUUID` when present, and without either, `signUp` answers `NO_RANDOM_ID` instead of throwing. `placeholderEmail(randomId?)` takes the same function.
+
 ## 0.2.2
 
 - Connecting Google while signed in (`/link-social`, `linkGoogle`) keeps every session of the account: the owner proved both sides, and signing their other devices out would be a bad surprise. A Google sign-in that joins a confirmed account still ends every session of that account. The hook tells them apart by who is signed in: a browser holding another account's session counts as a join. `afterAccountSaved(account, adapter, signedInUserId)` replaces 0.2.0's `keepSessionToken`, and `AccountAdapter` uses `findSession` instead of `listSessions` and `deleteSessions`.

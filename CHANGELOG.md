@@ -2,6 +2,10 @@
 
 All notable changes to `@jgb-solutions/kit`. Versions follow semver.
 
+## 0.2.1
+
+- `standardAuthOptions({ passkeyOrigin: 'request' })`: passkeys checked against the request's own origin, which `trustedBaseUrl` limits to the site and local hosts, so the site, previews and any local port each work (the jgb-starter template's setup). The default, `'listed'`, keeps the fixed list (the site, `localOrigins`, the Android app).
+
 ## 0.2.0
 
 - `@jgb-solutions/kit/auth`: Better Auth set up the same way in every app. Pieces (`authSettings`, `trustedBaseUrl`, `passkeyOrigins`, `androidOrigin`, `assetLinks`, `RATE_LIMIT_RULES`, `counterRateLimit`, `googleProvider`, `CONFIRMED_ACCOUNT_LINKING`, `freeUsername`, `afterAccountSaved`, `pictureFromIdToken`, `signedInFlagHook`, `asPublicRequest`, `toAuthUser`) and the preset `standardAuthOptions`: username or email with a password, passkeys, Google that joins only confirmed accounts (connect Google from the account page otherwise), roles and the first admins (`ADMIN_EMAILS`, confirmed addresses only), Bearer sessions for the mobile app, rate limits, no email ever sent.

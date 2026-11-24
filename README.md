@@ -79,7 +79,7 @@ What the preset sets:
 
 - **Passwords:** 12 to 128 characters, with no email verification and no reset link (no email is ever sent). `SIGN_UP=off` closes sign-up; existing accounts still sign in.
 - **Usernames** (Better Auth's username plugin): 3 to 30 characters, lower-case letters, digits, dots and underscores. An account made without one (Google) gets one from its name, with a number when it's taken.
-- **Passkeys** for the site, the `localOrigins` and the Android app (`androidCertSha256`).
+- **Passkeys** for the site, the `localOrigins` and the Android app (`androidCertSha256`). With `passkeyOrigin: 'request'`, the request's own origin instead (the site, previews and any local port; one of `trustedBaseUrl`'s hosts), for apps without an Android app.
 - **Google**, when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set. `GOOGLE_MOBILE_CLIENT_IDS` adds the apps' clients, for ID-token sign-in. A new Google address makes a new account with a confirmed address. Joining existing accounts is "merge only confirmed" (see below).
 - **Roles:** Better Auth's admin plugin, with the app's access control. A new account whose address is in `ADMIN_EMAILS` starts as admin when it's created with Google (a confirmed address); a sign-up with that address by email and password starts as an ordinary user, so nobody can claim an admin's address first. Other first admins are promoted from the server (the app's admin script).
 - **The mobile app:** the bearer plugin.

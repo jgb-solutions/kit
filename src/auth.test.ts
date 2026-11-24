@@ -11,6 +11,7 @@ import {
   passkeyOrigins,
   pictureFromIdToken,
   roleForNewUser,
+  standardAuthOptions,
   toAuthUser,
   trustedBaseUrl,
   type CounterStore,
@@ -207,4 +208,38 @@ test('toAuthUser: the display username, no placeholder email, no suspended accou
   expect(toAuthUser(user, roleOf)).toEqual({ id: '1', username: 'Ana', name: 'Ana', email: null, image: null, role: 'admin' })
   expect(toAuthUser({ ...user, banned: true }, roleOf)).toBeNull()
   expect(toAuthUser(null, roleOf)).toBeNull()
+})
+
+describe('standardAuthOptions: passkey origins', () => {
+  const base = {
+    appName: 'Example',
+    siteUrl: 'https://app.example.com',
+    settings: authSettings({ E2E: '1' }),
+    database: undefined,
+    admin: { defaultRole: 'user', adminRoles: ['admin'] },
+    takenUsernames: async () => new Set<string>(),
+    usernameFallback: 'member',
+  }
+  const passkeyOptions = (options: ReturnType<typeof standardAuthOptions>) => {
+    const plugin = options.plugins.find((p) => p.id === 'passkey')
+    return plugin && 'options' in plugin ? (plugin.options as { origin?: unknown }) : null
+  }
+
+  test("'listed' (the default): the site, local origins and the Android app", () => {
+    const options = standardAuthOptions({ ...base, localOrigins: ['http://localhost:5173'], androidCertSha256: ['00:01'] })
+    expect(passkeyOptions(options)?.origin).toEqual(['https://app.example.com', 'http://localhost:5173', 'android:apk-key-hash:AAE'])
+  })
+
+  test("'request': no list, so Better Auth uses the request's own (allowed) origin", () => {
+    const options = standardAuthOptions({ ...base, passkeyOrigin: 'request' })
+    expect(passkeyOptions(options)).not.toBeNull()
+    expect(passkeyOptions(options)?.origin).toBeUndefined()
+  })
+
+  test("'request' refuses the Android app's certificates and local origins", () => {
+    expect(() => standardAuthOptions({ ...base, passkeyOrigin: 'request', androidCertSha256: ['00:01'] })).toThrow('passkeyOrigin')
+    expect(() => standardAuthOptions({ ...base, passkeyOrigin: 'request', localOrigins: ['http://localhost:5173'] })).toThrow(
+      'passkeyOrigin',
+    )
+  })
 })

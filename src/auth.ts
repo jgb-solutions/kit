@@ -372,7 +372,14 @@ export type StandardAuthInput<A extends AdminOptions> = {
   takenUsernames: (candidates: string[]) => Promise<ReadonlySet<string>>
   /** The username base when a name gives too little ("listener", "member"…). */
   usernameFallback: string
-  /** Local origins allowed to use passkeys (development and E2E): `['http://localhost:5173']`. */
+  /**
+   * Which origins may use passkeys. `'listed'` (the default): the site, `localOrigins` and the Android
+   * app (`androidCertSha256`). `'request'`: the request's own origin, which `trustedBaseUrl` limits to
+   * the site and local hosts, so the site, previews and any local port work, each with its own
+   * passkeys. `'request'` can't serve the Android app.
+   */
+  passkeyOrigin?: 'listed' | 'request'
+  /** Local origins allowed to use passkeys (development and E2E) with `passkeyOrigin: 'listed'`: `['http://localhost:5173']`. */
   localOrigins?: readonly string[]
   /** The Android app's signing certificates (SHA-256, `AB:CD:…`), for passkeys in the app. */
   androidCertSha256?: readonly string[]
@@ -403,6 +410,9 @@ export type StandardAuthInput<A extends AdminOptions> = {
  */
 export function standardAuthOptions<A extends AdminOptions>(input: StandardAuthInput<A>) {
   const { settings } = input
+  const fromRequest = input.passkeyOrigin === 'request'
+  if (fromRequest && (input.androidCertSha256?.length || input.localOrigins?.length))
+    throw new Error("passkeyOrigin 'request' can't take androidCertSha256 or localOrigins: use 'listed'.")
   const days = input.sessionDays ?? 30
   return {
     appName: input.appName,
@@ -462,10 +472,15 @@ export function standardAuthOptions<A extends AdminOptions>(input: StandardAuthI
       username({ minUsernameLength: USERNAME.min, maxUsernameLength: USERNAME.max }),
       passkey({
         rpName: input.appName,
-        origin: passkeyOrigins(input.siteUrl, {
-          ...(input.localOrigins ? { local: input.localOrigins } : {}),
-          ...(input.androidCertSha256 ? { androidCertSha256: input.androidCertSha256 } : {}),
-        }),
+        // Without an origin list, Better Auth checks passkeys against the request's own origin.
+        ...(fromRequest
+          ? {}
+          : {
+              origin: passkeyOrigins(input.siteUrl, {
+                ...(input.localOrigins ? { local: input.localOrigins } : {}),
+                ...(input.androidCertSha256 ? { androidCertSha256: input.androidCertSha256 } : {}),
+              }),
+            }),
       }),
       admin(input.admin),
       bearer(),

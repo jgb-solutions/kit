@@ -24,6 +24,11 @@ describe('authSettings', () => {
     expect(authSettings({ E2E: '1' }).rateLimit).toBe(false)
   })
 
+  test('E2E=1 is refused in production', () => {
+    expect(() => authSettings({ E2E: '1', NODE_ENV: 'production' })).toThrow('E2E=1')
+    expect(() => authSettings({ E2E: '1', NODE_ENV: 'production', BETTER_AUTH_SECRET: 's'.repeat(32) })).toThrow('E2E=1')
+  })
+
   test('reads sign-up, the first admins and Google', () => {
     const settings = authSettings({
       BETTER_AUTH_SECRET: 's'.repeat(32),
@@ -44,9 +49,11 @@ describe('authSettings', () => {
   })
 })
 
-test('roleForNewUser: the first admins come from ADMIN_EMAILS', () => {
-  expect(roleForNewUser(' ANA@example.com', ['ana@example.com'], 'user', 'admin')).toBe('admin')
-  expect(roleForNewUser('ben@example.com', ['ana@example.com'], 'user', 'admin')).toBe('user')
+test('roleForNewUser: the first admins come from ADMIN_EMAILS, confirmed addresses only', () => {
+  expect(roleForNewUser({ email: ' ANA@example.com', emailVerified: true }, ['ana@example.com'], 'user', 'admin')).toBe('admin')
+  expect(roleForNewUser({ email: 'ana@example.com', emailVerified: false }, ['ana@example.com'], 'user', 'admin')).toBe('user')
+  expect(roleForNewUser({ email: 'ana@example.com' }, ['ana@example.com'], 'user', 'admin')).toBe('user')
+  expect(roleForNewUser({ email: 'ben@example.com', emailVerified: true }, ['ana@example.com'], 'user', 'admin')).toBe('user')
 })
 
 test('trustedBaseUrl: only the site and local hosts', () => {

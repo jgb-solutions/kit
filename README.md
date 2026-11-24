@@ -81,7 +81,7 @@ What the preset sets:
 - **Usernames** (Better Auth's username plugin): 3 to 30 characters, lower-case letters, digits, dots and underscores. An account made without one (Google) gets one from its name, with a number when it's taken.
 - **Passkeys** for the site, the `localOrigins` and the Android app (`androidCertSha256`).
 - **Google**, when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set. `GOOGLE_MOBILE_CLIENT_IDS` adds the apps' clients, for ID-token sign-in. A Google address that matches an account joins it only when Google verified it; that first join signs the account out everywhere else, and the account takes Google's picture only if it had none.
-- **Roles:** Better Auth's admin plugin, with the app's access control. A new account whose address is in `ADMIN_EMAILS` starts as admin.
+- **Roles:** Better Auth's admin plugin, with the app's access control. A new account whose address is in `ADMIN_EMAILS` starts as admin when it's created with Google (a confirmed address); a sign-up with that address by email and password starts as an ordinary user, so nobody can claim an admin's address first. Other first admins are promoted from the server (the app's admin script).
 - **The mobile app:** the bearer plugin.
 - **Limits:** 60 requests a minute, tighter on sign-in, sign-up, passkeys and password changes (`RATE_LIMIT_RULES`). Counts go in the database, or in a counter store with `rateLimitStorage: counterRateLimit(() => redis)`, which lets attempts through when the store is down.
 - **Sessions:** 30 days, renewed daily, with a 5-minute cookie cache. The base URL is the request's host only for the site or a local host; anything else falls back to the site.

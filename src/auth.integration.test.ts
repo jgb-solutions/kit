@@ -22,7 +22,7 @@ async function makeAuth(env: Record<string, string> = {}) {
   const options = standardAuthOptions({
     appName: 'Example',
     siteUrl: SITE,
-    settings: authSettings({ E2E: '1', ADMIN_EMAILS: 'boss@example.com', ...env }),
+    settings: authSettings({ E2E: '1', ADMIN_EMAILS: 'boss@example.com,boss2@example.com', ...env }),
     database: db,
     admin: { ac, roles, defaultRole: 'user', adminRoles: ['admin'] },
     takenUsernames: async (candidates) => {
@@ -87,12 +87,45 @@ describe('standardAuthOptions with Better Auth', () => {
     expect(response.status).toBe(400)
   })
 
-  test('an address in ADMIN_EMAILS starts as admin', async () => {
+  test('signing up with an address in ADMIN_EMAILS does not make an admin: the address is not confirmed', async () => {
     const { auth } = await makeAuth()
-    const response = await auth.api.signUpEmail({
-      body: { name: 'Boss', username: 'boss', email: 'Boss@Example.com', password: 'correct horse battery' },
-    })
-    expect(response.user).toMatchObject({ role: 'admin' })
+    const response = await auth.handler(
+      json('/sign-up/email', { name: 'Boss', username: 'boss', email: 'Boss@Example.com', password: 'correct horse battery' }),
+    )
+    expect(response.status).toBe(200)
+    const body: unknown = await response.json()
+    expect(body).toMatchObject({ user: { role: 'user', emailVerified: false } })
+    // Claiming a confirmed address in the request changes nothing; asking for a role is refused.
+    const claimed = await auth.handler(
+      json('/sign-up/email', {
+        name: 'B2',
+        username: 'boss2',
+        email: 'boss2@example.com',
+        password: 'correct horse battery',
+        emailVerified: true,
+      }),
+    )
+    expect(await claimed.json()).toMatchObject({ user: { role: 'user', emailVerified: false } })
+    const asked = await auth.handler(
+      json('/sign-up/email', {
+        name: 'B3',
+        username: 'boss3',
+        email: 'boss3@example.com',
+        password: 'correct horse battery',
+        role: 'admin',
+      }),
+    )
+    expect(asked.status).toBe(400)
+  })
+
+  test('an account created with Google (a confirmed address) in ADMIN_EMAILS starts as admin', async () => {
+    const { auth } = await makeAuth()
+    const ctx = await auth.$context
+    const created = await ctx.internalAdapter.createUser(
+      { name: 'Boss', email: 'boss@example.com', emailVerified: true },
+      { method: 'oauth' },
+    )
+    expect(created).toMatchObject({ role: 'admin' })
   })
 
   test('an account made without a username gets one from its name, with a number when taken', async () => {

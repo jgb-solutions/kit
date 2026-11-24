@@ -38,7 +38,7 @@ export type AuthSettings = {
   signUp: boolean
   /** Rate limits: always on, except on the E2E test server (every test comes from 127.0.0.1). */
   rateLimit: boolean
-  /** Addresses whose new accounts start as admin (the first admins), lower-cased. */
+  /** Addresses whose new accounts start as admin when created with a confirmed address (Google), lower-cased. */
   adminEmails: string[]
   /** "Continue with Google": on only when GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are both set. */
   google: GoogleSettings | null
@@ -47,10 +47,13 @@ export type AuthSettings = {
 /**
  * Sign-in settings from the environment, the same on every host: BETTER_AUTH_SECRET, SIGN_UP,
  * ADMIN_EMAILS, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_MOBILE_CLIENT_IDS (comma-separated:
- * the Android and iOS clients). E2E=1 marks the E2E test server. Throws without a secret.
+ * the Android and iOS clients). E2E=1 marks the E2E test server: its stand-in secret and its rate
+ * limits off are refused when NODE_ENV is production, so a stray E2E=1 can't start production with a
+ * public secret. Throws without a secret.
  */
 export function authSettings(env: Env): AuthSettings {
   const e2e = env.E2E === '1'
+  if (e2e && env.NODE_ENV === 'production') throw new Error('E2E=1 is set in production: remove it.')
   const secret = env.BETTER_AUTH_SECRET || (e2e ? E2E_SECRET : '')
   if (!secret) throw new Error('BETTER_AUTH_SECRET is not set.')
   const list = (value: string | undefined) =>
@@ -69,9 +72,19 @@ export function authSettings(env: Env): AuthSettings {
   }
 }
 
-/** The role a new account starts with: `adminRole` for an address in ADMIN_EMAILS, else `defaultRole`. */
-export function roleForNewUser<R extends string>(email: string, adminEmails: readonly string[], defaultRole: R, adminRole: R): R {
-  return adminEmails.includes(email.trim().toLowerCase()) ? adminRole : defaultRole
+/**
+ * The role a new account starts with: `adminRole` for an address in ADMIN_EMAILS, but only when the
+ * address is confirmed (Google sets `emailVerified` from its `email_verified`; a sign-up with an email
+ * address never does, since no email is sent). Otherwise anyone could sign up first with an admin's
+ * address and take the role. Else `defaultRole`.
+ */
+export function roleForNewUser<R extends string>(
+  user: { email: string; emailVerified?: unknown },
+  adminEmails: readonly string[],
+  defaultRole: R,
+  adminRole: R,
+): R {
+  return user.emailVerified === true && adminEmails.includes(user.email.trim().toLowerCase()) ? adminRole : defaultRole
 }
 
 /**
@@ -342,7 +355,7 @@ export type StandardAuthInput<A extends AdminOptions> = {
  * The standard Better Auth options, for `betterAuth(standardAuthOptions({...}))`: username and email
  * sign-in with a password (no email ever sent: nothing to verify, no reset link), passkeys, Google
  * when its keys are set (merge-verified linking, a username from the name), roles through the admin
- * plugin with the first admins from ADMIN_EMAILS, the bearer plugin for the mobile app, rate limits,
+ * plugin with the first admins from ADMIN_EMAILS (confirmed addresses only), the bearer plugin for the mobile app, rate limits,
  * 30-day sessions and a 5-minute cookie cache.
  */
 export function standardAuthOptions<A extends AdminOptions>(input: StandardAuthInput<A>) {
@@ -378,7 +391,7 @@ export function standardAuthOptions<A extends AdminOptions>(input: StandardAuthI
           before: async (user: { email: string; name: string } & Record<string, unknown>) => {
             const data: Record<string, unknown> = {
               ...user,
-              role: roleForNewUser(user.email, settings.adminEmails, input.admin.defaultRole, input.admin.adminRoles[0] ?? 'admin'),
+              role: roleForNewUser(user, settings.adminEmails, input.admin.defaultRole, input.admin.adminRoles[0] ?? 'admin'),
             }
             if (typeof data.username !== 'string' || !data.username) {
               const name = await freeUsername(user.name, user.email, input.takenUsernames, input.usernameFallback)

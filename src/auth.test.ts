@@ -25,9 +25,14 @@ describe('authSettings', () => {
     expect(authSettings({ E2E: '1' }).rateLimit).toBe(false)
   })
 
-  test('E2E=1 is refused in production', () => {
+  test('E2E=1 is refused on a production server that listens beyond this machine', () => {
     expect(() => authSettings({ E2E: '1', NODE_ENV: 'production' })).toThrow('E2E=1')
+    expect(() => authSettings({ E2E: '1', NODE_ENV: 'production', HOST: '0.0.0.0' })).toThrow('E2E=1')
     expect(() => authSettings({ E2E: '1', NODE_ENV: 'production', BETTER_AUTH_SECRET: 's'.repeat(32) })).toThrow('E2E=1')
+  })
+
+  test('an E2E server running a production build on 127.0.0.1 is fine', () => {
+    expect(authSettings({ E2E: '1', NODE_ENV: 'production', HOST: '127.0.0.1' }).rateLimit).toBe(false)
   })
 
   test('reads sign-up, the first admins and Google', () => {

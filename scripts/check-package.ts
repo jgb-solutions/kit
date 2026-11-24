@@ -1,7 +1,7 @@
 /**
  * Checks what would be published, before every publish (prepublishOnly) and in CI:
  * - every subpath export's JavaScript and types exist, and each module loads with its named exports;
- * - the tarball holds only dist/, README.md, LICENSE and package.json (no sources, tests or secrets);
+ * - the tarball holds only dist/, README.md, CHANGELOG.md, LICENSE and package.json (no sources, tests or secrets);
  * - repository.url names this repo (npm's provenance and trusted publishing require it);
  * - nothing app-specific slipped in: no Access team other than the examples, no 32/64-character hex
  *   IDs (Access AUD tags, account IDs), no addresses outside example.com (README, "What never goes in").
@@ -27,7 +27,7 @@ const pack = Bun.spawnSync(['bun', 'pm', 'pack', '--dry-run', '--ignore-scripts'
 if (pack.exitCode !== 0) problems.push(`bun pm pack failed: ${pack.stderr.toString().trim()}`)
 const files = [...pack.stdout.toString().matchAll(/^packed\s+\S+\s+(\S+)$/gm)].map((match) => match[1]!)
 if (files.length === 0) problems.push('bun pm pack listed no files')
-const allowed = /^(dist\/[\w.-]+\.(js|d\.ts)|README\.md|LICENSE|package\.json)$/
+const allowed = /^(dist\/[\w.-]+\.(js|d\.ts)|README\.md|CHANGELOG\.md|LICENSE|package\.json)$/
 for (const file of files) if (!allowed.test(file)) problems.push(`the tarball would include ${file}`)
 
 const forbidden: [RegExp, string][] = [

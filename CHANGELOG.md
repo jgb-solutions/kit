@@ -2,6 +2,12 @@
 
 All notable changes to `@jgb-solutions/kit`. Versions follow semver.
 
+## 0.3.0
+
+- `@jgb-solutions/kit/admin`: the admin panel kit, moved in from `@jgb-solutions/admin` 0.1.5 unchanged (the shell, data blocks with sortable columns and rows per page, forms, charts, the light/dark/system theme switch). Its stylesheet is `@jgb-solutions/kit/admin/styles.css`. To move: replace `@jgb-solutions/admin` with `@jgb-solutions/kit/admin` in imports (and `/styles.css`), then remove `@jgb-solutions/admin`.
+- React and react-dom are optional peer dependencies: only `kit/admin` needs them. An app that imports `kit/access` or `kit/auth` bundles no admin or React code; `check:install` builds such an app and fails if it does.
+- `sideEffects` lists CSS only, so bundlers drop any namespace an app doesn't import.
+
 ## 0.2.3
 
 - `createMobileAuth({ randomId })` (`kit/auth/expo`): signing up without an email no longer needs a global `crypto`. React Native's Hermes has none, so `signUp` crashed there ("Property 'crypto' doesn't exist", found in the jgb-starter app template). Pass expo-crypto's `randomUUID`; it defaults to the runtime's `crypto.randomUUID` when present, and without either, `signUp` answers `NO_RANDOM_ID` instead of throwing. `placeholderEmail(randomId?)` takes the same function.

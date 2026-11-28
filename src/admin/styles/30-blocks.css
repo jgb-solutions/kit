@@ -1,0 +1,688 @@
+/*
+ * Data blocks: the bento grid and its tiles, stat tiles, the dark hero chart tile, the data table,
+ * the activity feed, badges, meters and avatar stacks.
+ */
+
+/* Bento: 12 columns on desktop, 2 on phones. Tiles take spans. */
+.ja-bento {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  gap: var(--gap);
+}
+.ja-tile {
+  grid-column: span var(--span, 12);
+  grid-row: span var(--row-span, 1);
+  min-width: 0;
+  padding: var(--pad);
+  border-radius: var(--r-tile);
+  background: var(--tile);
+  color: var(--ink);
+}
+.ja-tile[data-tone='night'] {
+  background: var(--night);
+  color: var(--night-ink);
+}
+.ja-tile[data-tone='sun'] {
+  background: var(--sun);
+  color: var(--sun-ink);
+}
+.ja-tile-title {
+  font: 700 18px/1.25 var(--font-display);
+}
+.ja-tile-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ja-tile-head > .ja-tile-title {
+  margin-right: 4px;
+}
+
+/* Stat tiles */
+.ja-label {
+  color: var(--muted);
+  font-size: 14px;
+}
+.ja-tile[data-tone='night'] .ja-label {
+  color: #b9b3dd;
+}
+.ja-tile[data-tone='sun'] :is(.ja-label, .ja-note) {
+  color: var(--sun-ink);
+}
+.ja-number {
+  font: 700 34px/1.1 var(--font-display);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.ja-note {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.ja-delta {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ja-delta[data-good='true'] {
+  color: var(--good);
+}
+.ja-delta[data-good='false'] {
+  color: var(--bad);
+}
+.ja-tile[data-tone='night'] .ja-delta[data-good] {
+  color: var(--sun);
+}
+.ja-tile[data-tone='sun'] .ja-delta[data-good] {
+  color: var(--sun-ink);
+}
+
+/* Meter: a rounded bar, filled with the brand colour. */
+.ja-meter {
+  height: 10px;
+  margin-top: 12px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--tile-sunk);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ja-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--brand);
+}
+
+/* Avatar stack: overlapping faces, then "+313". */
+.ja-avatar-stack {
+  display: flex;
+  margin-top: 12px;
+  padding-left: 8px;
+}
+.ja-avatar-stack > span {
+  margin-left: -8px;
+  border: 3px solid var(--tile);
+  box-sizing: content-box;
+}
+.ja-avatar-stack .ja-more {
+  display: inline-grid;
+  place-items: center;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: var(--brand-soft);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* The hero: a dark tile with the big number, its delta, a period switch and a line chart. */
+.ja-hero {
+  display: flex;
+  flex-direction: column;
+}
+.ja-hero .ja-number {
+  font-size: 56px;
+  margin: 6px 0 2px;
+}
+.ja-hero-chart {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+/* Segmented control (the hero's period switch, filters). */
+.ja-segmented {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: var(--tile-sunk);
+}
+.ja-segmented button {
+  min-height: 30px;
+  padding: 3px 12px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.ja-segmented button[aria-pressed='true'] {
+  background: var(--sun);
+  color: var(--sun-ink);
+}
+.ja-tile[data-tone='night'] .ja-segmented {
+  background: rgb(255 255 255 / 0.08);
+}
+.ja-tile[data-tone='night'] .ja-segmented button {
+  color: var(--night-muted);
+}
+.ja-tile[data-tone='night'] .ja-segmented button[aria-pressed='true'] {
+  color: var(--sun-ink);
+}
+
+/* Filter tabs above a table (All / Admins / Suspended). */
+.ja-filters {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ja-filters button {
+  min-height: 32px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.ja-filters button:hover {
+  color: var(--ink);
+}
+.ja-filters button[aria-pressed='true'] {
+  background: var(--night);
+  color: var(--night-ink);
+}
+.ja-filter-search {
+  margin-left: auto;
+  min-width: 220px;
+  background: var(--tile-sunk);
+}
+
+/* Status: a dot and a word, in the status colour. */
+.ja-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+.ja-status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.ja-status[data-tone='good'] {
+  color: var(--good);
+}
+.ja-status[data-tone='warn'] {
+  color: var(--warn);
+}
+.ja-status[data-tone='bad'] {
+  color: var(--bad);
+}
+.ja-status[data-tone='neutral'] {
+  color: var(--muted);
+}
+
+/* Data table: Daylight's real table, in Bento's rounded rows; cards on phones. */
+.ja-table-wrap {
+  min-width: 0;
+}
+.ja-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  font-size: 14.5px;
+}
+.ja-table caption {
+  text-align: left;
+}
+.ja-table th {
+  padding: 6px 12px 2px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+/* Sortable headers: the whole header is a button; the arrow shows the direction (faint until sorted). */
+.ja-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: -4px -6px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.ja-sort:hover,
+.ja-sort[data-sorted] {
+  color: var(--ink);
+}
+.ja-sort-arrow {
+  display: inline-grid;
+  opacity: 0;
+}
+.ja-sort-arrow svg {
+  width: 14px;
+  height: 14px;
+}
+.ja-sort:hover .ja-sort-arrow,
+.ja-sort:focus-visible .ja-sort-arrow {
+  opacity: 0.5;
+}
+.ja-sort[data-sorted] .ja-sort-arrow {
+  opacity: 1;
+}
+th[data-align='end'] .ja-sort {
+  flex-direction: row-reverse;
+}
+/* The phone's "Sort by" list (headers are hidden there). */
+.ja-sort-phone {
+  display: none;
+}
+.ja-table td {
+  padding: 10px 12px;
+  background: var(--tile-sunk);
+  vertical-align: middle;
+}
+.ja-table :is(th, td)[data-align='end'] {
+  text-align: right;
+}
+.ja-table td:first-child {
+  border-radius: var(--r-row) 0 0 var(--r-row);
+}
+.ja-table td:last-child {
+  border-radius: 0 var(--r-row) var(--r-row) 0;
+}
+.ja-table tr[data-flash='true'] td {
+  animation: ja-flash 1s ease-out;
+}
+@keyframes ja-flash {
+  from {
+    background: var(--brand-soft);
+  }
+}
+.ja-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.ja-who > span:last-child {
+  min-width: 0;
+}
+.ja-who b {
+  display: block;
+  font-weight: 500;
+}
+.ja-who small {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.ja-muted {
+  color: var(--muted);
+  font-size: 13.5px;
+}
+.ja-row-action {
+  min-height: 32px;
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: 6px 12px;
+  background: var(--tile);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ja-row-action:hover {
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ja-row-action[data-variant='danger'] {
+  color: var(--bad);
+}
+.ja-empty {
+  padding: 28px 16px;
+  border-radius: var(--r-row);
+  background: var(--tile-sunk);
+  color: var(--muted);
+  text-align: center;
+}
+.ja-skeleton {
+  display: block;
+  height: 14px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--line), var(--tile-sunk), var(--line));
+  background-size: 200% 100%;
+  animation: ja-shimmer 1.4s linear infinite;
+}
+@keyframes ja-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Pagination */
+.ja-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.ja-page-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.ja-page-size .ja-select-wrap {
+  display: inline-block;
+}
+.ja-page-size .ja-select {
+  width: auto;
+  min-height: 36px;
+  padding: 6px 34px 6px 12px;
+  font-size: 14px;
+}
+.ja-pages {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ja-pages button {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--tile-sunk);
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.ja-pages button[aria-current='page'] {
+  background: var(--night);
+  color: var(--night-ink);
+}
+.ja-pages button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.ja-pages svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Activity feed */
+.ja-feed {
+  display: grid;
+  gap: 14px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ja-feed-day {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ja-feed-item {
+  display: flex;
+  gap: 12px;
+  font-size: 14.5px;
+}
+.ja-feed-item small {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+.ja-feed-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.ja-feed-icon svg {
+  width: 17px;
+  height: 17px;
+}
+.ja-feed-icon[data-tone='good'] {
+  background: var(--good-soft);
+  color: var(--good);
+}
+.ja-feed-icon[data-tone='warn'] {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.ja-feed-icon[data-tone='bad'] {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+@media (max-width: 760px) {
+  .ja-bento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ja-tile {
+    grid-column: span var(--phone-span, 2);
+    grid-row: auto;
+  }
+  .ja-number {
+    font-size: 26px;
+  }
+  .ja-hero .ja-number {
+    font-size: 44px;
+  }
+  .ja-filter-search {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+
+  /* Table rows become cards: two columns, each column placed by its `phone` setting. */
+  .ja-table thead {
+    display: none;
+  }
+  .ja-sort-phone {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .ja-sort-phone .ja-select-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+  .ja-table,
+  .ja-table tbody {
+    display: block;
+  }
+  .ja-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+    margin-bottom: 8px;
+    padding: 12px;
+    border-radius: var(--r-row);
+    background: var(--tile-sunk);
+  }
+  .ja-table td,
+  .ja-table td:first-child,
+  .ja-table td:last-child {
+    display: block;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    text-align: left;
+    order: var(--phone-order, 0);
+  }
+  .ja-table td[data-phone-align='end'] {
+    justify-self: end;
+    text-align: right;
+  }
+  .ja-table td[data-phone='hidden'] {
+    display: none;
+  }
+  .ja-table td[data-phone='full'] {
+    grid-column: 1 / -1;
+  }
+  .ja-pager > span {
+    display: none;
+  }
+  /* A changed row lights up as one card. */
+  .ja-table tr[data-flash='true'] {
+    animation: ja-flash 1s ease-out;
+  }
+  .ja-table tr[data-flash='true'] td {
+    animation: none;
+  }
+}
+
+/* Charts */
+.ja-chart svg {
+  display: block;
+  overflow: visible;
+}
+.ja-chart-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ja-tile[data-tone='night'] .ja-chart-labels {
+  color: var(--night-muted);
+}
+.ja-chart {
+  margin: 0;
+}
+.ja-chart-plot {
+  position: relative;
+}
+.ja-chart-dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+}
+/* Values on hover and focus: invisible columns over the plot, a guide and a small tooltip. */
+.ja-chart-points {
+  position: absolute;
+  inset: 0;
+}
+.ja-chart-point {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 10px;
+  cursor: crosshair;
+}
+.ja-chart-point:focus-visible {
+  outline-offset: -3px;
+}
+.ja-chart-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1.5px dashed color-mix(in oklab, currentColor 35%, transparent);
+  pointer-events: none;
+}
+.ja-chart-tip {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: 1px;
+  translate: -50% calc(-100% - 12px);
+  min-width: 64px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: var(--night);
+  color: var(--night-ink);
+  box-shadow: 0 6px 18px rgb(13 11 24 / 0.22);
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ja-chart-tip[data-side='start'] {
+  translate: -12px calc(-100% - 12px);
+}
+.ja-chart-tip[data-side='end'] {
+  translate: calc(-100% + 12px) calc(-100% - 12px);
+}
+.ja-chart-tip[data-side='after'] {
+  translate: 0 0;
+}
+.ja-chart-tip[data-side='before'] {
+  translate: -100% 0;
+}
+.ja-chart-tip > span {
+  color: var(--night-muted);
+}
+.ja-chart-tip strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 14px/1.25 var(--font-display);
+}
+.ja-chart-tip i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.4);
+}
+.ja-tile[data-tone='night'] .ja-chart-tip {
+  background: var(--tile);
+  color: var(--ink);
+}
+.ja-tile[data-tone='night'] .ja-chart-tip > span {
+  color: var(--muted);
+}
+.ja-bar-labels > span {
+  flex: 1 1 0;
+  text-align: center;
+}
+.ja-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.ja-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ja-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+}

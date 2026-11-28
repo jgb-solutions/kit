@@ -46,8 +46,11 @@ jobs:
       - run: bun run test
       - run: bun run build
       - run: bun run check:package
-      # kit/access, kit/auth/rules and kit/auth/expo installed without the optional peers: they load and type-check.
+      # The namespaces without their optional peers, the tree-shaking check, kit/admin with React alone.
       - run: bun run check:install
+      # kit/admin in a real browser (axe, light and dark, desktop and phone) before anything is published.
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:e2e
       # Trusted publishing needs the npm CLI (11.5.1 or later, on Node 22.14 or later); `bun publish`
       # isn't a documented trusted-publishing client.
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0

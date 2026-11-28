@@ -1,0 +1,287 @@
+/* Forms and actions: fields, selects, checks and switches, the confirm dialog, toasts. */
+.ja-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.ja-field-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.ja-field-hint {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+.ja-field-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--bad);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ja-error-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bad);
+  color: var(--bad-ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+.ja-input,
+.ja-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--tile);
+  color: var(--ink);
+  font-size: 15px;
+}
+.ja-input::placeholder {
+  color: var(--muted);
+}
+textarea.ja-input {
+  resize: vertical;
+  min-height: 88px;
+}
+:is(.ja-input, .ja-select):hover {
+  border-color: color-mix(in oklab, var(--line) 60%, var(--muted));
+}
+:is(.ja-input, .ja-select)[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+.ja-select-wrap {
+  position: relative;
+  display: block;
+}
+.ja-select {
+  appearance: none;
+  padding-right: 38px;
+  cursor: pointer;
+}
+.ja-select-wrap svg {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin-top: -9px;
+  color: var(--muted);
+  pointer-events: none;
+}
+/* Inline in a table row: compact, sized to its text. */
+.ja-select-inline {
+  display: inline-block;
+}
+.ja-select-inline .ja-select {
+  width: auto;
+  min-height: 34px;
+  padding: 6px 32px 6px 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.ja-select-inline svg {
+  right: 9px;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+}
+
+.ja-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.ja-check input {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: var(--brand);
+  flex: none;
+}
+.ja-check label {
+  font-weight: 500;
+}
+
+.ja-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+}
+.ja-switch-row > span {
+  font-weight: 500;
+}
+.ja-switch {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: color-mix(in oklab, var(--muted) 45%, var(--tile));
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ja-switch > span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  transition: transform 0.15s;
+}
+.ja-switch[aria-checked='true'] {
+  background: var(--brand);
+}
+.ja-switch[aria-checked='true'] > span {
+  transform: translateX(20px);
+}
+.ja-switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The confirm dialog: the browser's own <dialog>, in a tile. */
+.ja-dialog {
+  /* Opened from a table row, it would inherit the cell's alignment and type: reset them. */
+  text-align: left;
+  white-space: normal;
+  font: 15px/1.5 var(--font-body);
+  width: min(440px, calc(100vw - 28px));
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-tile);
+  background: var(--tile);
+  color: var(--ink);
+  box-shadow: 0 24px 60px rgb(13 11 24 / 0.35);
+}
+.ja-dialog[open] {
+  animation: ja-dialog-in 0.16s ease-out;
+}
+.ja-dialog::backdrop {
+  background: rgb(13 11 24 / 0.55);
+}
+@keyframes ja-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+.ja-dialog-box {
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+}
+.ja-dialog-text {
+  color: var(--muted);
+}
+.ja-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* Toasts: dark, short, with the sun tick. */
+.ja-toasts {
+  position: fixed;
+  z-index: 30;
+  right: 24px;
+  bottom: 24px;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  pointer-events: none;
+}
+.ja-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 420px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: var(--night);
+  color: var(--night-ink);
+  font-size: 14.5px;
+  box-shadow: 0 10px 30px rgb(13 11 24 / 0.28);
+  pointer-events: auto;
+  animation: ja-toast-in 0.2s ease-out;
+}
+@keyframes ja-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.ja-toast-mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--sun);
+  color: var(--sun-ink);
+  font-weight: 800;
+}
+.ja-toast-mark svg {
+  width: 15px;
+  height: 15px;
+}
+.ja-toast[data-tone='error'] .ja-toast-mark {
+  background: #ff7a6b;
+  color: #1c1930;
+}
+.ja-toast-close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 4px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.1);
+  color: var(--night-ink);
+  cursor: pointer;
+}
+.ja-toast-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 760px) {
+  .ja-toasts {
+    left: 14px;
+    right: 14px;
+    bottom: calc(var(--ja-dock-height) + var(--ja-dock-bottom) + 12px);
+    justify-items: stretch;
+  }
+  .ja-toast {
+    max-width: none;
+  }
+  .ja-dialog-actions {
+    flex-direction: column-reverse;
+  }
+  .ja-dialog-actions .ja-button {
+    width: 100%;
+  }
+}
+
+/* A form inside a tile: spaced from the text above it and from what follows. */
+.ja-form {
+  margin: 14px 0 20px;
+}

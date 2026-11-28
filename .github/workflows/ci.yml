@@ -27,5 +27,15 @@ jobs:
       # The published files: built, loadable, and free of anything app-specific (scripts/check-package.ts).
       - run: bun run build
       - run: bun run check:package
-      # kit/access, kit/auth/rules and kit/auth/expo installed without the optional peers: they load and type-check.
+      # The namespaces installed without their optional peers (kit/access, kit/auth/rules, kit/auth/expo),
+      # an app bundle using them holds no admin or React code, and kit/admin renders with React alone.
       - run: bun run check:install
+      # kit/admin in a real browser: axe (WCAG 2.1 AA) in light and dark, desktop and phone, and each component's behaviour.
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:e2e
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

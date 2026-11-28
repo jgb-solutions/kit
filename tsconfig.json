@@ -8,13 +8,22 @@
     "noImplicitOverride": true,
     "noEmit": true,
     "target": "es2022",
-    "lib": ["es2022", "dom"],
+    "lib": ["es2022", "dom", "dom.iterable"],
     "module": "esnext",
     "moduleResolution": "bundler",
+    "jsx": "react-jsx",
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "types": ["bun"],
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "scripts/**/*.ts",
+    "playground/**/*.ts",
+    "playground/**/*.tsx",
+    "e2e/**/*.ts",
+    "playwright.config.ts"
+  ]
 }

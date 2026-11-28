@@ -3,7 +3,10 @@
  * - every subpath export's JavaScript and types exist, and each module loads with its named exports;
  * - each module imports only what it may (IMPORTS below): `access` jose alone, `auth/rules` and
  *   `auth/expo` nothing, so an app using only those never needs Better Auth or oRPC installed;
- * - only jose is a dependency; Better Auth, its passkey plugin and oRPC are optional peer dependencies;
+ * - kit/admin imports React alone (react, react/jsx-runtime: production JSX), exports its components,
+ *   and its stylesheet (dist/admin/styles.css) stays scoped to the admin (.ja-…); the other modules
+ *   never import React, so an app using kit/access or kit/auth bundles no admin or React code;
+ * - only jose is a dependency; Better Auth, its passkey plugin, oRPC and React are optional peer dependencies;
  * - the tarball holds only dist/, README.md, CHANGELOG.md, LICENSE and package.json (no sources, tests or secrets);
  * - repository.url names this repo (npm's provenance and trusted publishing require it);
  * - nothing app-specific slipped in: no Access team other than the examples, no 32/64-character hex
@@ -23,8 +26,9 @@ const IMPORTS: Record<string, readonly string[]> = {
   './auth/orpc': ['@orpc/server'],
   './auth/rules': [],
   './auth/expo': [],
+  './admin': ['react'],
 }
-const OPTIONAL_PEERS = ['better-auth', '@better-auth/passkey', '@orpc/server']
+const OPTIONAL_PEERS = ['better-auth', '@better-auth/passkey', '@orpc/server', 'react', 'react-dom']
 
 const packageOf = (specifier: string) =>
   specifier
@@ -62,6 +66,40 @@ for (const entry of entrypoints()) {
   if (Object.keys(module).length === 0) problems.push(`${entry.subpath}: ${entry.js} exports nothing`)
 }
 
+// kit/admin: the production JSX runtime, the components it promises, and a stylesheet scoped to the admin.
+if (existsSync('dist/admin.js')) {
+  if (readFileSync('dist/admin.js', 'utf8').includes('react/jsx-dev-runtime')) problems.push('./admin uses the development JSX runtime')
+  const admin = (await import('../dist/admin.js')) as Record<string, unknown>
+  for (const name of ['AdminShell', 'Sidebar', 'Dock', 'PageHeader', 'Button', 'DataTable', 'PageSize', 'ThemeToggle', 'icons'])
+    if (!(name in admin)) problems.push(`./admin doesn't export ${name}`)
+}
+if (!existsSync('dist/admin/styles.css')) problems.push('dist/admin/styles.css is missing (bun run build)')
+else {
+  const css = readFileSync('dist/admin/styles.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+  // Every rule stays inside the admin: tokens on .ja-root, classes prefixed ja-, nothing global.
+  for (const [, selector] of css.matchAll(/(?:^|[{};])\s*([^\s{};@][^{};]*)\{/g))
+    for (const part of topLevelParts(selector!))
+      if (part && !/(\.ja-|^from$|^to$|^\d+%$)/.test(part)) problems.push(`admin/styles.css: "${part}" isn't scoped to the admin (.ja-…)`)
+}
+
+/** A selector list's parts, split on commas outside parentheses (":where(a, b)" stays whole). */
+function topLevelParts(selector: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let start = 0
+  for (let i = 0; i < selector.length; i++) {
+    const char = selector[i]
+    if (char === '(') depth++
+    else if (char === ')') depth--
+    else if (char === ',' && depth === 0) {
+      parts.push(selector.slice(start, i).trim())
+      start = i + 1
+    }
+  }
+  parts.push(selector.slice(start).trim())
+  return parts
+}
+
 const dependencies = Object.keys(pkg.dependencies)
 if (dependencies.join() !== 'jose') problems.push(`dependencies must be jose alone, not: ${dependencies.join(', ')}`)
 const peers: Record<string, string> = pkg.peerDependencies
@@ -77,7 +115,7 @@ const pack = Bun.spawnSync(['bun', 'pm', 'pack', '--dry-run', '--ignore-scripts'
 if (pack.exitCode !== 0) problems.push(`bun pm pack failed: ${pack.stderr.toString().trim()}`)
 const files = [...pack.stdout.toString().matchAll(/^packed\s+\S+\s+(\S+)$/gm)].map((match) => match[1]!)
 if (files.length === 0) problems.push('bun pm pack listed no files')
-const publishable = /^(dist\/([\w-]+\/)?[\w.-]+\.(js|d\.ts)|README\.md|CHANGELOG\.md|LICENSE|package\.json)$/
+const publishable = /^(dist\/([\w-]+\/)*[\w.-]+\.(js|d\.ts)|dist\/admin\/styles\.css|README\.md|CHANGELOG\.md|LICENSE|package\.json)$/
 for (const file of files) if (!publishable.test(file)) problems.push(`the tarball would include ${file}`)
 
 const forbidden: [RegExp, string][] = [
@@ -85,7 +123,7 @@ const forbidden: [RegExp, string][] = [
   [/\b[0-9a-f]{64}\b|\b[0-9a-f]{32}\b/g, 'a 32- or 64-character hex ID'],
   [/[\w.+-]+@(?!example\.com\b)[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}\b/gi, 'an email address outside example.com'],
 ]
-for (const file of files.filter((path) => /\.(js|ts|md|json)$/.test(path))) {
+for (const file of files.filter((path) => /\.(js|ts|css|md|json)$/.test(path))) {
   const text = readFileSync(file, 'utf8')
   for (const [pattern, what] of forbidden)
     for (const match of text.matchAll(pattern)) problems.push(`${file} contains ${what}: ${match[0]}`)

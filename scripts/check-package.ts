@@ -69,7 +69,9 @@ for (const entry of entrypoints()) {
 // kit/admin: the production JSX runtime, the components it promises, and a stylesheet scoped to the admin.
 if (existsSync('dist/admin.js')) {
   if (readFileSync('dist/admin.js', 'utf8').includes('react/jsx-dev-runtime')) problems.push('./admin uses the development JSX runtime')
-  const admin = (await import('../dist/admin.js')) as Record<string, unknown>
+  // A computed path, like the loop above: CI type-checks before it builds.
+  const adminJs = '../dist/admin.js'
+  const admin = (await import(adminJs)) as Record<string, unknown>
   for (const name of ['AdminShell', 'Sidebar', 'Dock', 'PageHeader', 'Button', 'DataTable', 'PageSize', 'ThemeToggle', 'icons'])
     if (!(name in admin)) problems.push(`./admin doesn't export ${name}`)
 }

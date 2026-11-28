@@ -1,0 +1,438 @@
+/*
+ * The shell: on desktop, Bento's floating dark sidebar (Daylight's labelled sections) next to the
+ * page; it collapses to an icon rail. At 760 px and below: a top bar and the floating dark dock.
+ */
+.ja-shell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Sidebar */
+.ja-sidebar {
+  position: sticky;
+  top: 16px;
+  width: 236px;
+  height: calc(100vh - 32px);
+  height: calc(100dvh - 32px);
+  min-height: 480px;
+  margin: 16px 0 16px 16px;
+  padding: 18px 14px;
+  border-radius: 26px;
+  background: var(--night);
+  color: var(--night-ink);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ja-sidebar[data-collapsed='true'] {
+  width: 76px;
+  padding: 18px 12px;
+}
+.ja-brandrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 6px;
+  font: 700 18px/1.1 var(--font-display);
+}
+.ja-sidebar[data-collapsed='true'] .ja-brandrow {
+  flex-direction: column;
+  padding: 0;
+}
+.ja-brandrow .ja-brand-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ja-mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  background: var(--sun);
+  color: var(--sun-ink);
+  font: 800 18px/1 var(--font-display);
+  overflow: hidden;
+}
+.ja-mark img,
+.ja-mark svg {
+  width: 100%;
+  height: 100%;
+}
+.ja-collapse {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+.ja-sidebar[data-collapsed='true'] .ja-collapse {
+  margin-left: 0;
+}
+.ja-collapse svg {
+  width: 18px;
+  height: 18px;
+}
+.ja-sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.ja-nav-end {
+  margin-top: auto;
+}
+.ja-navlabel {
+  color: var(--night-muted);
+  font-size: 13px;
+  padding: 0 10px;
+  margin-bottom: 6px;
+}
+.ja-nav {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ja-navlink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  color: #d6d2ee;
+  text-decoration: none;
+  font-weight: 500;
+}
+.ja-navlink:hover {
+  background: rgb(255 255 255 / 0.07);
+  color: var(--night-ink);
+}
+.ja-navlink svg {
+  width: 20px;
+  height: 20px;
+}
+.ja-navlink[aria-current='page'] {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+.ja-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgb(255 255 255 / 0.1);
+  border-radius: var(--r-pill);
+  padding: 1px 8px;
+  font-variant-numeric: tabular-nums;
+}
+.ja-navlink[aria-current='page'] .ja-count {
+  background: rgb(255 255 255 / 0.22);
+}
+.ja-sidebar[data-collapsed='true'] .ja-navlink {
+  position: relative;
+  justify-content: center;
+  padding: 10px;
+}
+.ja-sidebar[data-collapsed='true'] .ja-navlink .ja-count {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  line-height: 16px;
+  padding: 0 5px;
+  font-size: 10.5px;
+  background: var(--sun);
+  color: var(--sun-ink);
+}
+.ja-sidebar-bottom {
+  display: grid;
+  gap: 10px;
+}
+.ja-me {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.06);
+  min-width: 0;
+}
+.ja-me > span:last-child {
+  min-width: 0;
+}
+.ja-me b {
+  display: block;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ja-me small {
+  display: block;
+  color: var(--night-muted);
+  font-size: 12.5px;
+  line-height: 1.2;
+}
+.ja-sidebar[data-collapsed='true'] .ja-me {
+  justify-content: center;
+  padding: 6px;
+}
+
+/* In dark mode the panels sit on a dark canvas: a faint edge keeps them apart. */
+.ja-root[data-theme='dark'] :is(.ja-sidebar, .ja-dock, .ja-tile[data-tone='night']) {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07);
+}
+@media (prefers-color-scheme: dark) {
+  .ja-root:not([data-theme='light']) :is(.ja-sidebar, .ja-dock, .ja-tile[data-tone='night']) {
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07);
+  }
+}
+
+/* The page area */
+.ja-main {
+  min-width: 0;
+  padding: 22px 26px 48px 22px;
+}
+.ja-mobile-top {
+  display: none;
+}
+
+/* The page's header: title, one line of context, then search, buttons and the main action. */
+.ja-page-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  margin-bottom: 18px;
+}
+.ja-page-header > div:first-child {
+  min-width: 0;
+  margin-right: auto;
+}
+.ja-page-title {
+  font: 800 34px/1.08 var(--font-display);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.ja-page-header p {
+  margin-top: 4px;
+  color: var(--muted);
+}
+.ja-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ja-topsearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 260px;
+  border-radius: var(--r-pill);
+  padding: 0 16px;
+  background: var(--tile);
+  color: var(--muted);
+}
+.ja-topsearch svg {
+  width: 17px;
+  height: 17px;
+}
+.ja-topsearch input {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  outline: none;
+}
+.ja-topsearch input::placeholder {
+  color: var(--muted);
+}
+.ja-topsearch:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Dock: the phone's navigation, floating above the page. */
+.ja-dock {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .ja-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ja-sidebar {
+    display: none;
+  }
+  /* The dock floats over the page: the page ends, focused fields and toasts stay clear of it. */
+  .ja-root {
+    --ja-dock-height: 64px;
+    --ja-dock-bottom: max(16px, env(safe-area-inset-bottom));
+    --ja-dock-clear: calc(var(--ja-dock-height) + var(--ja-dock-bottom) + 16px);
+  }
+  .ja-root :where(a, button, input, select, textarea, [tabindex]) {
+    scroll-margin-bottom: var(--ja-dock-clear);
+  }
+  .ja-main {
+    padding: 14px 14px var(--ja-dock-clear);
+  }
+  .ja-mobile-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    font: 700 18px/1.1 var(--font-display);
+  }
+  .ja-mobile-top .ja-mark {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+  .ja-mobile-top .ja-actions {
+    margin-left: auto;
+    gap: 8px;
+  }
+  .ja-mobile-top .ja-icon-button {
+    width: 38px;
+    height: 38px;
+  }
+  .ja-page-title {
+    font-size: 28px;
+  }
+  .ja-page-header .ja-desktop-only {
+    display: none;
+  }
+  .ja-topsearch {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+  .ja-dock {
+    position: fixed;
+    z-index: 20;
+    left: 14px;
+    right: 14px;
+    bottom: var(--ja-dock-bottom);
+    display: flex;
+    align-items: center;
+    height: var(--ja-dock-height);
+    justify-content: space-around;
+    gap: 4px;
+    padding: 8px;
+    border-radius: 24px;
+    background: var(--night);
+    box-shadow: 0 10px 30px rgb(13 11 24 / 0.28);
+  }
+  .ja-docklink {
+    display: grid;
+    justify-items: center;
+    gap: 1px;
+    flex: 1 1 0;
+    max-width: 80px;
+    padding: 6px 0;
+    border-radius: 16px;
+    color: var(--night-muted);
+    text-decoration: none;
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+  .ja-docklink svg {
+    width: 22px;
+    height: 22px;
+  }
+  .ja-docklink[aria-current='page'] {
+    background: var(--brand);
+    color: var(--brand-ink);
+  }
+}
+
+/* The theme switch: three choices (light, dark, the system's). Names show in the sidebar; in a
+   collapsed sidebar it's one button that goes to the next choice. */
+.ja-theme {
+  display: inline-flex;
+}
+.ja-theme-options {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: var(--tile);
+}
+.ja-theme-options button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.ja-theme-options button:hover {
+  color: var(--ink);
+}
+.ja-theme-options button[aria-checked='true'] {
+  background: var(--tile-sunk);
+  color: var(--ink);
+}
+.ja-theme-options svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+.ja-theme-options span {
+  display: none;
+}
+.ja-theme[data-tone='night'] {
+  display: flex;
+}
+.ja-theme[data-tone='night'] .ja-theme-options {
+  flex: 1;
+  background: rgb(255 255 255 / 0.06);
+}
+.ja-theme[data-tone='night'] .ja-theme-options button {
+  /* As wide as its name, so "System" keeps its padding in the sidebar's width. */
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 5px;
+  padding: 0 5px;
+  color: var(--night-muted);
+}
+.ja-theme[data-tone='night'] .ja-theme-options button:hover {
+  color: var(--night-ink);
+}
+.ja-theme[data-tone='night'] .ja-theme-options button[aria-checked='true'] {
+  background: rgb(255 255 255 / 0.14);
+  color: var(--night-ink);
+}
+.ja-theme[data-tone='night'] .ja-theme-options span {
+  display: inline;
+}
+.ja-theme-cycle {
+  display: none;
+}
+.ja-sidebar[data-collapsed='true'] .ja-theme {
+  justify-content: center;
+}
+.ja-sidebar[data-collapsed='true'] .ja-theme-options {
+  display: none;
+}
+.ja-sidebar[data-collapsed='true'] .ja-theme-cycle {
+  display: inline-grid;
+}

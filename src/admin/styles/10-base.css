@@ -1,0 +1,166 @@
+/* Base: the canvas, type, focus, and the buttons every other part uses. */
+.ja-root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--canvas);
+  color: var(--ink);
+  font: 15px/1.5 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+.ja-root *,
+.ja-root *::before,
+.ja-root *::after {
+  box-sizing: border-box;
+}
+.ja-root :where(h1, h2, h3, p) {
+  margin: 0;
+}
+.ja-root :where(a) {
+  color: inherit;
+}
+.ja-root :where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+}
+.ja-root :focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.ja-root svg {
+  flex: none;
+}
+
+/* Screen-reader-only text. */
+.ja-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ja-display {
+  font-family: var(--font-display);
+}
+
+/* Buttons: primary (the brand), quiet (a tile), danger. One primary per page area. */
+.ja-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: 10px 18px;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+.ja-button:hover {
+  background: color-mix(in oklab, var(--brand) 88%, black);
+}
+.ja-button[data-variant='quiet'] {
+  background: var(--tile);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ja-button[data-variant='quiet']:hover {
+  background: var(--tile-sunk);
+}
+.ja-button[data-variant='danger'] {
+  background: var(--bad);
+  color: var(--bad-ink);
+}
+.ja-button[data-variant='danger']:hover {
+  background: color-mix(in oklab, var(--bad) 88%, black);
+}
+.ja-button[data-size='small'] {
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: 13.5px;
+}
+.ja-button:disabled,
+.ja-button[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ja-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Round icon buttons (theme, notifications): always with an accessible name. */
+.ja-icon-button {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--tile);
+  color: var(--ink);
+  cursor: pointer;
+}
+.ja-icon-button:hover {
+  background: var(--tile-sunk);
+}
+.ja-icon-button svg {
+  width: 19px;
+  height: 19px;
+}
+.ja-icon-button[data-tone='night'] {
+  background: transparent;
+  color: var(--night-muted);
+}
+.ja-icon-button[data-tone='night']:hover {
+  background: rgb(255 255 255 / 0.08);
+  color: var(--night-ink);
+}
+.ja-icon-button .ja-dot {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bad);
+  box-shadow: 0 0 0 2px var(--tile);
+}
+
+/* Avatars: initials on a soft colour picked from the name, or a picture. */
+.ja-avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--size, 38px);
+  height: var(--size, 38px);
+  border-radius: var(--avatar-radius, 50%);
+  font-weight: 600;
+  font-size: calc(var(--size, 38px) * 0.34);
+  overflow: hidden;
+}
+.ja-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ja-root *,
+  .ja-root *::before,
+  .ja-root *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

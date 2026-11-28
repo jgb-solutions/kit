@@ -1,0 +1,94 @@
+/*
+ * @jgb-solutions/admin: design tokens. "Bento + Daylight's details" (owner, 2026-11-24).
+ *
+ * Everything lives under .ja-root (AdminShell's element), so the admin never restyles the rest of
+ * the app. The app sets --brand (AdminShell's `brand` prop); every other token is the kit's.
+ * Light by default; dark with data-theme="dark", or with the system's dark mode while the theme is
+ * "system" (no data-theme="light").
+ */
+.ja-root {
+  --brand: #6b4ce6;
+  --brand-ink: #ffffff;
+  --brand-soft: color-mix(in oklab, var(--brand) 14%, white);
+  --sun: #ffc84a;
+  --sun-ink: #4a3500;
+  --canvas: #eceaf6;
+  --tile: #ffffff;
+  --tile-sunk: #f6f5fb;
+  --night: #1f1b33;
+  --night-muted: #a9a3cc;
+  --night-ink: #ffffff;
+  --ink: #1c1930;
+  --muted: #6b6785; /* the mockup's #6d6987 is 4.39:1 on the canvas; this is the nearest that meets AA */
+  --line: #e4e1f0;
+  --good: #158150; /* the mockup's #18915a is 3.7:1 on --tile-sunk; this is the nearest that meets AA */
+  --warn: #946200;
+  --bad: #b42318;
+  --good-soft: #e3f5ec;
+  --warn-soft: #fff3d6;
+  --bad-soft: #fde7e5;
+  --bad-ink: #ffffff;
+  --focus: var(--brand);
+
+  --r-tile: 24px;
+  --r-control: 12px;
+  --r-row: 16px;
+  --r-pill: 999px;
+  --gap: 14px;
+  --pad: 18px 20px;
+
+  --font-display: 'Bricolage Grotesque', Figtree, ui-sans-serif, system-ui, sans-serif;
+  --font-body: Figtree, ui-sans-serif, system-ui, sans-serif;
+
+  color-scheme: light;
+}
+
+.ja-root[data-theme='dark'] {
+  --brand-soft: color-mix(in oklab, var(--brand) 22%, var(--tile));
+  --canvas: #121022;
+  --tile: #1c1930;
+  --tile-sunk: #24203a;
+  --night: #0d0b18;
+  --ink: #f1effa;
+  --muted: #a39fbf;
+  --line: #2e2a47;
+  --good: #4cc38a;
+  --warn: #f0b429;
+  --bad: #ff7a6b;
+  --bad-ink: #1c1930;
+  --good-soft: color-mix(in oklab, #4cc38a 18%, var(--tile));
+  --warn-soft: color-mix(in oklab, #f0b429 18%, var(--tile));
+  --bad-soft: color-mix(in oklab, #ff7a6b 18%, var(--tile));
+  --focus: color-mix(in oklab, var(--brand) 60%, white);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ja-root:not([data-theme='light']) {
+    --brand-soft: color-mix(in oklab, var(--brand) 22%, var(--tile));
+    --canvas: #121022;
+    --tile: #1c1930;
+    --tile-sunk: #24203a;
+    --night: #0d0b18;
+    --ink: #f1effa;
+    --muted: #a39fbf;
+    --line: #2e2a47;
+    --good: #4cc38a;
+    --warn: #f0b429;
+    --bad: #ff7a6b;
+    --bad-ink: #1c1930;
+    --good-soft: color-mix(in oklab, #4cc38a 18%, var(--tile));
+    --warn-soft: color-mix(in oklab, #f0b429 18%, var(--tile));
+    --bad-soft: color-mix(in oklab, #ff7a6b 18%, var(--tile));
+    --focus: color-mix(in oklab, var(--brand) 60%, white);
+    color-scheme: dark;
+  }
+}
+
+@media (max-width: 760px) {
+  .ja-root {
+    --r-tile: 20px;
+    --gap: 10px;
+    --pad: 14px 16px;
+  }
+}
